@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STYL Music Request</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="request-screen">
+    <section class="request-card">
+      <div class="request-brand">STYL</div>
+      <h1>Music Request</h1>
+      <p class="request-sub">Send a song request to your chauffeur.</p>
+
+      <label>Song Name</label>
+      <input id="songTitle" placeholder="Example: Essence" />
+
+      <label>Artist</label>
+      <input id="songArtist" placeholder="Example: Wizkid" />
+
+      <label>Optional YouTube/Spotify Link</label>
+      <input id="songLink" placeholder="Paste link if you have one" />
+
+      <button id="sendRequestBtn" type="button">Send Request</button>
+      <div id="requestStatus" class="request-status">Ready</div>
+      <p class="request-note">Your chauffeur will review and play approved requests from the STYL dashboard.</p>
+      <div class="booking-upgrade-box">
+        <div class="booking-title">Book Your Next STYL Ride</div>
+        <a id="bookNextRideBtn"
+           class="book-next-ride-btn"
+           href="https://stylblackcar.com/?promo=SPECIAL10&source=styl_dashboard_request&utm_source=styl_dashboard&utm_medium=qr_request&utm_campaign=ride_music_request"
+           target="_blank"
+           rel="noopener">Book Your Next Ride</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="request-firebase.js"></script>
+</body>
+</html>

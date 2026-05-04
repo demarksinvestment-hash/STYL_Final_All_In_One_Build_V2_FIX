@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STYL Remote</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="admin-screen">
+    <section class="admin-shell simple-admin">
+      <section class="admin-card">
+        <h1>STYL Remote</h1>
+        <div class="step-box" id="liveStatus">Connecting...</div>
+
+        <div class="step-box">
+          <strong>Remote</strong>
+          <div class="admin-actions admin-actions-remote">
+            <button class="admin-btn" id="remoteHomeBtn" type="button">Home / Stop</button>
+            <button class="admin-btn" id="remoteYoutubeBtn" type="button">YouTube</button>
+            <button class="admin-btn" id="remoteUnmuteBtn" type="button">Unmute</button>
+            <button class="admin-btn" id="remoteNewsBtn" type="button">News</button>
+            <button class="admin-btn" id="remoteSportsBtn" type="button">Sports</button>
+            <button class="admin-btn" id="remoteMusicBtn" type="button">Music</button>
+            <button class="admin-btn" id="remoteBookBtn" type="button">Book</button>
+            <button class="admin-btn" id="remoteVipBtn" type="button">VIP</button>
+          </div>
+        </div>
+
+        <div class="step-box">
+          <strong>Music</strong>
+          <div class="admin-actions admin-actions-remote">
+            <button class="admin-btn" id="musicExecutiveBtn" type="button">Executive</button>
+            <button class="admin-btn" id="musicVibeBtn" type="button">Vibe</button>
+            <button class="admin-btn" id="musicPartyBtn" type="button">Party</button>
+            <button class="admin-btn" id="music80sBtn" type="button">R&amp;B 80s</button>
+            <button class="admin-btn" id="musicAfrobeatsBtn" type="button">Afrobeats</button>
+            <button class="admin-btn" id="musicSpotifyBtn" type="button">Spotify</button>
+          </div>
+        </div>
+
+        
+        <div class="step-box">
+          <strong>Music Requests</strong>
+          <div id="requestsList" class="requests-list">No requests yet.</div>
+          <button class="admin-btn full-btn" id="playQueueBtn" type="button">Play All Requests Queue</button>
+          <button class="admin-btn full-btn" id="clearRequestsBtn" type="button">Clear Requests</button>
+        </div>
+
+
+        <div class="step-box">
+          <strong>Booking Performance</strong>
+          <div class="roi-controls">
+            <label>Avg Ride $</label>
+            <input id="roiAvgRide" value="120" />
+            <label>Conversion %</label>
+            <input id="roiConversionRate" value="20" />
+          </div>
+          <div id="bookingClicksBox" class="booking-clicks-box">No booking clicks yet.</div>
+          <button class="admin-btn full-btn" id="clearBookingClicksBtn" type="button">Clear Booking Clicks</button>
+        </div>
+
+        <details class="simple-details">
+          <summary>Message</summary>
+          <div class="admin-grid">
+            <div class="admin-field"><label>Guest</label><input id="guestName" value="Guest" /></div>
+            <div class="admin-field"><label>Trip</label><input id="trip" value="Luxury Ride" /></div>
+            <div class="admin-field"><label>Chauffeur</label><input id="chauffeurName" value="Ayo" /></div>
+            <div class="admin-field"><label>Vehicle</label><input id="vehicleName" value="Chevrolet Suburban" /></div>
+            <div class="admin-field"><label>Mode</label>
+              <select id="mode">
+                <option value="executive">Executive</option>
+                <option value="vibe">Vibe</option>
+                <option value="party">Party</option>
+                <option value="rnb80s">R&amp;B 80s</option>
+                <option value="afrobeats">Afrobeats</option>
+                <option value="spotify">Spotify</option>
+              </select>
+            </div>
+            <div class="admin-field full"><label>Welcome Note</label><input id="welcomeNote" value="Your STYL luxury experience is ready." /></div>
+            <div class="admin-field full"><label>Scrolling Message</label><input id="scrollingMessage" value="Good afternoon Guest • Your STYL luxury experience is ready • Ayo is your chauffeur today • Enjoy the ride in comfort and style • Join our VIP to receive exclusive discount offers •" /></div>
+          </div>
+          <button class="admin-btn full-btn" id="saveLiveBtn" type="button">Save Message</button>
+        </details>
+
+        <details class="simple-details">
+          <summary>Links</summary>
+          <div class="admin-grid">
+            <div class="admin-field full"><label>News</label><input id="newsUrl" value="https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Sports</label><input id="sportsUrl" value="https://www.youtube.com/embed/9Tce7rnobzA?autoplay=1&mute=1&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Booking</label><input id="bookingUrl" value="https://stylblackcar.com/" /></div>
+            <div class="admin-field full"><label>VIP</label><input id="vipFormUrl" value="https://stylblackcar.com/contact/" /></div>
+          </div>
+          <button class="admin-btn full-btn" id="saveSourcesBtn" type="button">Save Links</button>
+        </details>
+
+        <details class="simple-details">
+          <summary>Music Links</summary>
+          <div class="admin-grid">
+            <div class="admin-field full"><label>Executive</label><input id="executiveMusicUrl" value="https://www.youtube.com/embed/videoseries?list=PL8F6B0753B2CCA128&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Vibe</label><input id="vibeMusicUrl" value="https://www.youtube.com/embed/videoseries?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Party</label><input id="partyMusicUrl" value="https://www.youtube.com/embed/videoseries?list=PLFgquLnL59amEA53azfP6qWD5F3eVQfmx&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>R&amp;B 80s</label><input id="rnb80sMusicUrl" value="https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Afrobeats</label><input id="afrobeatsMusicUrl" value="https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0" /></div>
+            <div class="admin-field full"><label>Spotify Embed</label><input id="spotifyMusicUrl" value="https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator" /></div>
+            <div class="admin-field full"><label>YouTube API Key</label><input id="youtubeApiKey" placeholder="Paste YouTube Data API key" /></div>
+            <div class="admin-field full"><label>Music Request Page</label><input id="musicRequestUrl" value="https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html" /></div>
+            <div class="admin-field full"><label>Spotify Rider Link</label><input id="spotifyRiderUrl" value="https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html" /></div>
+            <div class="admin-field"><label>Spotify Sync</label><select id="spotifySyncEnabled"><option value="true">On</option><option value="false">Off</option></select></div>
+            <div class="admin-field"><label>Refresh Sec</label><input id="spotifySyncIntervalSeconds" value="25" /></div>
+          </div>
+          <button class="admin-btn full-btn" id="saveMusicLinksBtn" type="button">Save Music Links</button>
+        </details>
+
+        <details class="simple-details">
+          <summary>Live Override</summary>
+          <div class="admin-grid">
+            <div class="admin-field full"><label>News Override</label><input id="newsLiveOverride" placeholder="Paste news embed link" /></div>
+            <div class="admin-field full"><label>Sports Override</label><input id="sportsLiveOverride" placeholder="Paste sports embed link" /></div>
+          </div>
+          <div class="admin-actions">
+            <button class="admin-btn" id="goLiveNewsBtn" type="button">Go News</button>
+            <button class="admin-btn" id="goLiveSportsBtn" type="button">Go Sports</button>
+            <button class="admin-btn" id="clearLiveBtn" type="button">Clear</button>
+          </div>
+        </details>
+
+        <div class="compact-preview">
+          <span id="previewGreeting">Guest</span>
+          <span id="previewMode">Idle</span>
+        </div>
+
+        <!-- Hidden but kept because the working admin-firebase.js expects these IDs -->
+        <div class="hidden-admin-compat">
+          <button id="copyNewsBtn" type="button">Copy News</button>
+          <button id="copySportsBtn" type="button">Copy Sports</button>
+          <pre id="jsonOutput"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="admin-firebase.js"></script>
+</body>
+</html>
