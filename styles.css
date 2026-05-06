@@ -1090,3 +1090,35 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     height:auto;
   }
 }
+
+/* Auto-Unmute Backup Overlay */
+.media-sound-wrap,
+.youtube-cinematic-wrap{
+  position:relative;
+}
+.tap-sound-overlay{
+  position:absolute;
+  left:50%;
+  bottom:22px;
+  transform:translateX(-50%);
+  z-index:60;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:52px;
+  padding:0 22px;
+  border-radius:999px;
+  border:1px solid #d4af37;
+  background:linear-gradient(135deg,rgba(212,175,55,.95),rgba(245,217,138,.95));
+  color:#080808;
+  font-weight:900;
+  box-shadow:0 10px 34px rgba(0,0,0,.45);
+  touch-action:manipulation;
+  cursor:pointer;
+}
+.tap-sound-overlay.hidden{
+  display:none !important;
+}
+.tap-sound-overlay:active{
+  transform:translateX(-50%) scale(.97);
+}
