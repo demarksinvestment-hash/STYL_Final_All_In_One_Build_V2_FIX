@@ -326,7 +326,7 @@ window.addEventListener("load", async () => {
 
   byId("remoteHomeBtn")?.addEventListener("click", () => sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"));
   byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "YouTube"));
-  byId("remoteUnmuteBtn")?.addEventListener("click", () => sendRemote("unmute", { remoteNonce: Date.now() }, "Unmute"));
+  byId("remoteUnmuteBtn")?.addEventListener("click", () => sendRemote("unmute", { remoteNonce: Date.now() }, "Play + Sound"));
   byId("remoteNewsBtn")?.addEventListener("click", () => sendRemote("news", {}, "News"));
   byId("remoteSportsBtn")?.addEventListener("click", () => sendRemote("sports", {}, "Sports"));
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
