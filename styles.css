@@ -1250,3 +1250,5 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
 .styl-playlist-song:active{
   transform:scale(.99);
 }
+
+.queue-copy{line-height:1.4;}
