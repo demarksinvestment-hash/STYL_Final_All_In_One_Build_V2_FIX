@@ -26,6 +26,7 @@ const config = {
   youtubePanelQuery: "",
   youtubePanelVideoId: "",
   requestQueue: [],
+  requestQueueContinuous: false,
   bookingUrl: "https://stylblackcar.com/",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
@@ -76,6 +77,8 @@ let currentMusicMode = "executive";
 let requestQueue = [];
 let requestQueueIndex = 0;
 let requestQueueActive = false;
+let requestQueueContinuous = false;
+let requestQueueSignature = "";
 let requestQueueTimer = null;
 const requestQueueFallbackSeconds = 240;
 const requestQueueMinSeconds = 75;
@@ -642,13 +645,247 @@ async function scheduleSmartQueueTimer(videoId) {
   setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length} • Next in ${display}`);
 }
 
-function startRequestQueue(queue = []) {
-  requestQueue = Array.isArray(queue) ? queue.filter(item => item && (item.query || item.videoId)) : [];
+
+
+const stylSmartPlaylists = {
+  executive: {
+    title: "Executive",
+    description: "Smooth jazz, lounge, and luxury executive ride music.",
+    songs: [
+      "Kenny G Songbird",
+      "Kenny G Forever In Love",
+      "Sade No Ordinary Love",
+      "Sade Smooth Operator",
+      "George Benson Give Me The Night",
+      "Boney James Sweet Thing",
+      "Grover Washington Jr Just The Two Of Us",
+      "David Sanborn The Dream",
+      "Najee Sweet Love",
+      "Norman Brown After The Storm"
+    ]
+  },
+  vibe: {
+    title: "Vibe",
+    description: "Modern smooth R&B and relaxed city ride energy.",
+    songs: [
+      "Tems Free Mind",
+      "Wizkid Essence",
+      "Drake One Dance",
+      "Burna Boy For My Hand",
+      "H.E.R. Focus",
+      "Daniel Caesar Best Part",
+      "SZA Snooze",
+      "Brent Faiyaz All Mine",
+      "Giveon Heartbreak Anniversary",
+      "Chris Brown Under The Influence"
+    ]
+  },
+  party: {
+    title: "Party",
+    description: "High-energy clean party mode for events and nightlife.",
+    songs: [
+      "Beyonce Cuff It",
+      "Usher Yeah",
+      "Bruno Mars 24K Magic",
+      "Rema Calm Down",
+      "Davido Unavailable",
+      "Burna Boy Last Last",
+      "Tyla Water",
+      "Chris Brown Go Crazy",
+      "Drake Nice For What",
+      "Black Eyed Peas I Gotta Feeling"
+    ]
+  },
+  rnb80s: {
+    title: "R&B 80s",
+    description: "Classic R&B, soul, and throwback favorites.",
+    songs: [
+      "Anita Baker Sweet Love",
+      "Luther Vandross Never Too Much",
+      "Sade The Sweetest Taboo",
+      "Keith Sweat I Want Her",
+      "New Edition Can You Stand The Rain",
+      "Bobby Brown Every Little Step",
+      "Janet Jackson That's The Way Love Goes",
+      "Teddy Pendergrass Close The Door",
+      "The Isley Brothers Between The Sheets",
+      "Michael Jackson Human Nature"
+    ]
+  },
+  afrobeats: {
+    title: "Afrobeats",
+    description: "Premium Afrobeats ride playlist.",
+    songs: [
+      "Rema Calm Down",
+      "Burna Boy Last Last",
+      "Wizkid Essence",
+      "Davido Unavailable",
+      "Asake Lonely At The Top",
+      "Ayra Starr Rush",
+      "CKay Love Nwantiti",
+      "Kizz Daniel Buga",
+      "Tyla Water",
+      "Fireboy DML Peru"
+    ]
+  },
+  spotify: {
+    title: "Spotify Requests",
+    description: "Rider request page and shared ride music experience.",
+    songs: [
+      "Afrobeats latest hits",
+      "Smooth jazz lounge music",
+      "R&B 80s classics",
+      "Top clean party songs",
+      "Luxury lounge music",
+      "Kenny G greatest hits",
+      "Sade greatest hits",
+      "Wizkid Essence",
+      "Burna Boy Last Last",
+      "Rema Calm Down"
+    ]
+  }
+};
+
+function getActiveStylPlaylistKey() {
+  return stylSmartPlaylists[currentMusicMode] ? currentMusicMode : "executive";
+}
+
+function renderStylPlaylistBrowser() {
+  const box = byId("stylPlaylistBrowser");
+  if (!box) return;
+
+  const activeKey = getActiveStylPlaylistKey();
+  const playlist = stylSmartPlaylists[activeKey] || stylSmartPlaylists.executive;
+
+  box.innerHTML = `
+    <div class="styl-playlist-head">
+      <div>
+        <div class="queue-title">STYL ${playlist.title} Playlist</div>
+        <div class="queue-copy">${playlist.description}</div>
+      </div>
+    </div>
+    <div class="styl-playlist-tabs">
+      ${Object.entries(stylSmartPlaylists).map(([key, list]) => `
+        <button type="button" class="styl-playlist-tab ${key === activeKey ? "active" : ""}" data-playlist-key="${key}">${list.title}</button>
+      `).join("")}
+    </div>
+    <div class="styl-playlist-list">
+      ${playlist.songs.map((song, index) => `
+        <button type="button" class="styl-playlist-song" data-song="${song.replace(/"/g, '&quot;')}">
+          <span>${index + 1}. ${song}</span>
+          <small>Tap to play</small>
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.playlistKey || "executive";
+      currentMusicMode = stylSmartPlaylists[key] ? key : "executive";
+      renderStylPlaylistBrowser();
+      if (byId("musicModeTitle") && config.musicModes[currentMusicMode]) byId("musicModeTitle").textContent = config.musicModes[currentMusicMode].title;
+      document.querySelectorAll(".music-mode-btn").forEach(modeBtn => modeBtn.classList.toggle("active", modeBtn.dataset.musicMode === currentMusicMode));
+    });
+  });
+
+  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const song = btn.dataset.song || btn.textContent || "";
+      showView("youtube", "YouTube Lounge", "youtubeBtn");
+      searchYouTubePanel(song, true);
+    });
+  });
+}
+
+
+function normalizeRequestQueue(queue = []) {
+  return (Array.isArray(queue) ? queue : [])
+    .filter(item => item && (item.query || item.videoId))
+    .map((item, index) => ({
+      query: String(item.query || "").trim(),
+      videoId: String(item.videoId || "").trim(),
+      label: String(item.label || item.query || item.videoId || `Request ${index + 1}`).trim()
+    }));
+}
+
+function queueSignature(queue = []) {
+  return normalizeRequestQueue(queue).map(item => `${item.videoId || ""}|${item.query || ""}`).join("||");
+}
+
+function renderRequestQueuePanel() {
+  const box = byId("youtubeQueuePanel");
+  if (!box) return;
+
+  if (!requestQueue.length) {
+    box.innerHTML = `<div class="queue-empty">No active queue yet.</div>`;
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="queue-title">STYL Request Queue</div>
+    <div class="queue-copy">${requestQueueContinuous ? "Continuous play is ON" : "Queue loaded"}</div>
+    ${requestQueue.map((item, index) => `
+      <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
+        <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
+        ${index === requestQueueIndex && requestQueueActive ? "<small>Now playing</small>" : ""}
+      </button>
+    `).join("")}
+  `;
+
+  box.querySelectorAll(".queue-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index) && requestQueue[index]) {
+        requestQueueIndex = index;
+        requestQueueActive = true;
+        showView("youtube", "YouTube Lounge", "youtubeBtn");
+        playCurrentQueueItem();
+      }
+    });
+  });
+}
+
+function updateContinuousRequestQueue(queue = []) {
+  const nextQueue = normalizeRequestQueue(queue);
+  const nextSignature = queueSignature(nextQueue);
+
+  if (!nextQueue.length) {
+    requestQueue = [];
+    requestQueueIndex = 0;
+    requestQueueActive = false;
+    requestQueueContinuous = true;
+    requestQueueSignature = "";
+    renderRequestQueuePanel();
+    setYouTubePanelStatus("Continuous queue is on. Waiting for requests.");
+    return;
+  }
+
+  if (!requestQueueActive || !requestQueue.length) {
+    startRequestQueue(nextQueue, true);
+    return;
+  }
+
+  if (nextSignature !== requestQueueSignature) {
+    requestQueue = nextQueue;
+    requestQueueSignature = nextSignature;
+    requestQueueContinuous = true;
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
+  }
+}
+
+function startRequestQueue(queue = [], continuous = false) {
+  requestQueue = normalizeRequestQueue(queue);
   requestQueueIndex = 0;
   requestQueueActive = requestQueue.length > 0;
+  requestQueueContinuous = !!continuous;
+  requestQueueSignature = queueSignature(requestQueue);
+  renderRequestQueuePanel();
 
   if (!requestQueueActive) {
-    setYouTubePanelStatus("Queue is empty.");
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for requests." : "Queue is empty.");
     return;
   }
 
@@ -667,6 +904,7 @@ function playCurrentQueueItem() {
     searchYouTubePanel(item.query || "", true);
   }
   setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
+  renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
@@ -675,6 +913,13 @@ function playNextQueueItem() {
   requestQueueIndex += 1;
 
   if (requestQueueIndex >= requestQueue.length) {
+    if (requestQueueContinuous) {
+      requestQueueActive = false;
+      requestQueueIndex = requestQueue.length;
+      renderRequestQueuePanel();
+      setYouTubePanelStatus("Queue finished. Waiting for new requests...");
+      return;
+    }
     requestQueueActive = false;
     setYouTubePanelStatus("Request queue finished.");
     return;
@@ -750,6 +995,7 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
+  renderStylPlaylistBrowser();
   if (currentMusicMode === "spotify") startSpotifyLiveSync();
   else stopSpotifyLiveSync();
   if (currentView === "music") {
@@ -886,7 +1132,8 @@ function applyProfile(data = {}) {
       else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || []); }
+      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
+      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
