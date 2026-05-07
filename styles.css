@@ -1343,3 +1343,69 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
 @keyframes spinGold{to{transform:rotate(360deg);}}
 @keyframes buzzerPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
 @keyframes endTripPop{from{transform:translateY(18px) scale(.96);opacity:.2;}to{transform:translateY(0) scale(1);opacity:1;}}
+
+/* Editable Upsell Engine */
+.end-trip-overlay.theme-blackgold .end-trip-card{
+  background:radial-gradient(circle at top,rgba(255,255,255,.08),rgba(0,0,0,.98) 56%);
+  border-color:rgba(245,217,138,.8);
+}
+.end-trip-overlay.theme-vip .end-trip-card{
+  background:radial-gradient(circle at top,rgba(212,175,55,.28),rgba(20,0,30,.96) 58%);
+  box-shadow:0 25px 90px rgba(0,0,0,.65),0 0 60px rgba(212,175,55,.36);
+}
+.end-trip-overlay.theme-vip .gold-buzzer{
+  animation:buzzerPulse .9s infinite ease-in-out;
+}
+
+/* Music iframe full-size restore fix */
+#musicView .music-system{
+  height:100%;
+  min-height:0;
+}
+
+#musicView .music-panel{
+  height:100%;
+  min-height:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(0, 1fr) auto;
+}
+
+#musicView #musicContentLayout{
+  height:100%;
+  min-height:0;
+}
+
+#musicView #musicContentLayout:not(.spotify-visible){
+  display:block;
+}
+
+#musicView #musicContentLayout:not(.spotify-visible) .music-embed-wrap{
+  height:100%;
+  min-height:520px;
+}
+
+#musicView #musicContentLayout:not(.spotify-visible) iframe#musicFrame{
+  width:100%;
+  height:100%;
+  min-height:520px;
+}
+
+#musicView #musicContentLayout.spotify-visible{
+  height:100%;
+  min-height:0;
+}
+
+#musicView #musicContentLayout.spotify-visible .music-embed-wrap{
+  height:100%;
+  min-height:420px;
+}
+
+#musicView .music-embed-wrap{
+  overflow:hidden;
+  border-radius:18px;
+}
+
+#musicView iframe#musicFrame{
+  display:block;
+  border:0;
+}
