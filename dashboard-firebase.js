@@ -183,28 +183,20 @@ function afterViewAudioKick(name) {
     if (f) f.src = forceAutoplay(config.youtubeLoungeUrl);
     tryAutoSound("youtubeFrame");
     showActiveSoundOverlay();
-    tryAutoUnmuteAfterStart("youtubeFrame");
-    showActiveSoundOverlay();
   } else if (name === "news") {
     const f = byId("newsFrame");
     if (f) f.src = forceAutoplay(resolveNewsUrl());
     tryAutoSound("newsFrame");
-    showActiveSoundOverlay();
-    tryAutoUnmuteAfterStart("newsFrame");
     showActiveSoundOverlay();
   } else if (name === "sports") {
     const f = byId("sportsFrame");
     if (f) f.src = forceAutoplay(resolveSportsUrl());
     tryAutoSound("sportsFrame");
     showActiveSoundOverlay();
-    tryAutoUnmuteAfterStart("sportsFrame");
-    showActiveSoundOverlay();
   } else if (name === "music") {
     const f = byId("musicFrame");
     if (f) f.src = forceAutoplay(config.musicModes[currentMusicMode].embedUrl);
     tryAutoSound("musicFrame");
-    showActiveSoundOverlay();
-    tryAutoUnmuteAfterStart("musicFrame");
     showActiveSoundOverlay();
   }
 }
@@ -290,7 +282,7 @@ const youtubePanelSuggestionsList = [
 ];
 
 function buildYouTubeVideoUrl(videoId) {
-  return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=1&rel=0&playsinline=1&enablejsapi=1`;
+  return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0&playsinline=1&enablejsapi=1`;
 }
 
 function buildYouTubeFallbackUrl(query) {
