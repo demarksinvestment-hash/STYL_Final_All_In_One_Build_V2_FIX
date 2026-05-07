@@ -651,7 +651,7 @@ const stylSmartPlaylists = {
   executive: {
     title: "Executive",
     description: "Smooth jazz, lounge, and luxury executive ride music.",
-    songs: [
+    songPool: [
       "Kenny G Songbird",
       "Kenny G Forever In Love",
       "Sade No Ordinary Love",
@@ -662,12 +662,14 @@ const stylSmartPlaylists = {
       "David Sanborn The Dream",
       "Najee Sweet Love",
       "Norman Brown After The Storm"
-    ]
+    ],
+    limit: 10,
+    songs: []
   },
   vibe: {
     title: "Vibe",
     description: "Modern smooth R&B and relaxed city ride energy.",
-    songs: [
+    songPool: [
       "Tems Free Mind",
       "Wizkid Essence",
       "Drake One Dance",
@@ -678,12 +680,14 @@ const stylSmartPlaylists = {
       "Brent Faiyaz All Mine",
       "Giveon Heartbreak Anniversary",
       "Chris Brown Under The Influence"
-    ]
+    ],
+    limit: 10,
+    songs: []
   },
   party: {
     title: "Party",
     description: "High-energy clean party mode for events and nightlife.",
-    songs: [
+    songPool: [
       "Beyonce Cuff It",
       "Usher Yeah",
       "Bruno Mars 24K Magic",
@@ -694,12 +698,14 @@ const stylSmartPlaylists = {
       "Chris Brown Go Crazy",
       "Drake Nice For What",
       "Black Eyed Peas I Gotta Feeling"
-    ]
+    ],
+    limit: 10,
+    songs: []
   },
   rnb80s: {
     title: "R&B 80s",
     description: "Classic R&B, soul, and throwback favorites.",
-    songs: [
+    songPool: [
       "Anita Baker Sweet Love",
       "Luther Vandross Never Too Much",
       "Sade The Sweetest Taboo",
@@ -710,12 +716,14 @@ const stylSmartPlaylists = {
       "Teddy Pendergrass Close The Door",
       "The Isley Brothers Between The Sheets",
       "Michael Jackson Human Nature"
-    ]
+    ],
+    limit: 10,
+    songs: []
   },
   afrobeats: {
     title: "Afrobeats",
     description: "Premium Afrobeats ride playlist.",
-    songs: [
+    songPool: [
       "Rema Calm Down",
       "Burna Boy Last Last",
       "Wizkid Essence",
@@ -726,12 +734,14 @@ const stylSmartPlaylists = {
       "Kizz Daniel Buga",
       "Tyla Water",
       "Fireboy DML Peru"
-    ]
+    ],
+    limit: 10,
+    songs: []
   },
   spotify: {
     title: "Spotify Requests",
     description: "Rider request page and shared ride music experience.",
-    songs: [
+    songPool: [
       "Afrobeats latest hits",
       "Smooth jazz lounge music",
       "R&B 80s classics",
@@ -745,6 +755,26 @@ const stylSmartPlaylists = {
     ]
   }
 };
+
+
+function pickRandomSongs(pool = [], limit = 10) {
+  const copy = [...pool];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, limit);
+}
+
+function refreshDynamicStylPlaylists() {
+  Object.keys(stylSmartPlaylists).forEach(key => {
+    const playlist = stylSmartPlaylists[key];
+    if (playlist && Array.isArray(playlist.songPool)) {
+      playlist.songs = pickRandomSongs(playlist.songPool, playlist.limit || 10);
+    }
+  });
+}
+
 
 function getActiveStylPlaylistKey() {
   return stylSmartPlaylists[currentMusicMode] ? currentMusicMode : "executive";
@@ -783,7 +813,8 @@ function renderStylPlaylistBrowser() {
     btn.addEventListener("click", () => {
       const key = btn.dataset.playlistKey || "executive";
       currentMusicMode = stylSmartPlaylists[key] ? key : "executive";
-      renderStylPlaylistBrowser();
+      refreshDynamicStylPlaylists();
+  renderStylPlaylistBrowser();
       if (byId("musicModeTitle") && config.musicModes[currentMusicMode]) byId("musicModeTitle").textContent = config.musicModes[currentMusicMode].title;
       document.querySelectorAll(".music-mode-btn").forEach(modeBtn => modeBtn.classList.toggle("active", modeBtn.dataset.musicMode === currentMusicMode));
     });
@@ -801,11 +832,12 @@ function renderStylPlaylistBrowser() {
 
 function normalizeRequestQueue(queue = []) {
   return (Array.isArray(queue) ? queue : [])
-    .filter(item => item && (item.query || item.videoId))
+    .filter(item => item)
     .map((item, index) => ({
       query: String(item.query || "").trim(),
       videoId: String(item.videoId || "").trim(),
-      label: String(item.label || item.query || item.videoId || `Request ${index + 1}`).trim()
+      label: String(item.label || item.query || item.videoId || `Request ${index + 1}`).trim(),
+      pending: !(item.query || item.videoId)
     }));
 }
 
@@ -824,7 +856,7 @@ function renderRequestQueuePanel() {
 
   box.innerHTML = `
     <div class="queue-title">STYL Request Queue</div>
-    <div class="queue-copy">${requestQueueContinuous ? "Continuous play is ON" : "Queue loaded"}</div>
+    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous play ON" : "Queue loaded"}</div>
     ${requestQueue.map((item, index) => `
       <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
         <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
