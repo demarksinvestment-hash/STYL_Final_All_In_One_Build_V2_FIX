@@ -405,6 +405,31 @@ function unmuteYouTubePlayer() {
   unmuteActiveMediaPlayer();
 }
 
+
+function playFrameWithSound(frameId) {
+  sendPlayerCommandToFrame(frameId, "playVideo");
+  sendPlayerCommandToFrame(frameId, "unMute");
+  sendPlayerCommandToFrame(frameId, "setVolume", [100]);
+
+  setTimeout(() => {
+    sendPlayerCommandToFrame(frameId, "playVideo");
+    sendPlayerCommandToFrame(frameId, "unMute");
+    sendPlayerCommandToFrame(frameId, "setVolume", [100]);
+  }, 900);
+
+  setTimeout(() => {
+    sendPlayerCommandToFrame(frameId, "playVideo");
+    sendPlayerCommandToFrame(frameId, "unMute");
+    sendPlayerCommandToFrame(frameId, "setVolume", [100]);
+  }, 2200);
+
+  showTapForSoundOverlayForFrame(frameId, false);
+}
+
+function playAndUnmuteActiveMediaPlayer() {
+  playFrameWithSound(getActiveMediaFrameId());
+}
+
 function initTapForSoundOverlay() {
   [
     ["tapForSoundBtn", "youtubeFrame"],
@@ -412,7 +437,7 @@ function initTapForSoundOverlay() {
     ["tapForSoundSportsBtn", "sportsFrame"],
     ["tapForSoundMusicBtn", "musicFrame"]
   ].forEach(([buttonId, frameId]) => {
-    byId(buttonId)?.addEventListener("click", () => unmuteFrame(frameId));
+    byId(buttonId)?.addEventListener("click", () => playFrameWithSound(frameId));
   });
 }
 
@@ -865,7 +890,7 @@ function applyProfile(data = {}) {
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
-      else if (cmd === "unmute") { unmuteActiveMediaPlayer(); }
+      else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
       else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
