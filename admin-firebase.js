@@ -198,7 +198,7 @@ async function sendContinuousQueueUpdate(statusText = "Queue updated") {
       videoId: extractYouTubeVideoId(item.link || ""),
       label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim()
     }))
-    .filter(item => item.query || item.videoId);
+    .filter(item => item.query || item.videoId || item.label);
 
   await sendRemote("youtubequeuecontinuous", {
     requestQueue: queue,
@@ -338,6 +338,7 @@ window.addEventListener("load", async () => {
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
   byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
+  byId("remoteEndTripBtn")?.addEventListener("click", () => sendRemote("endtrip", { remoteNonce: Date.now() }, "End Trip Offer"));
 
   byId("musicExecutiveBtn")?.addEventListener("click", () => sendMusicMode("executive", "Music: Executive"));
   byId("musicVibeBtn")?.addEventListener("click", () => sendMusicMode("vibe", "Music: Vibe"));
