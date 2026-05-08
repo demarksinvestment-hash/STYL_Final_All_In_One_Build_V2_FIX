@@ -60,6 +60,54 @@
           <button class="admin-btn full-btn" id="clearBookingClicksBtn" type="button">Clear Booking Clicks</button>
         </div>
 
+
+        <details class="simple-details" open>
+          <summary>End Trip Upsell</summary>
+          <div class="admin-grid">
+            <div class="admin-field full">
+              <label>Headline</label>
+              <input id="upsellHeadline" value="Thanks for riding with STYL" />
+            </div>
+            <div class="admin-field full">
+              <label>Offer Text</label>
+              <input id="upsellBody" value="Enjoy $15 off your next ride." />
+            </div>
+            <div class="admin-field">
+              <label>Promo Code</label>
+              <input id="upsellPromo" value="SPECIAL10" />
+            </div>
+            <div class="admin-field">
+              <label>Badge</label>
+              <input id="upsellBadge" value="VIP OFFER UNLOCKED" />
+            </div>
+            <div class="admin-field full">
+              <label>Button Text</label>
+              <input id="upsellButtonText" value="Book Your Next Ride" />
+            </div>
+            <div class="admin-field full">
+              <label>Button Link</label>
+              <input id="upsellButtonLink" value="https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer" />
+            </div>
+            <div class="admin-field">
+              <label>Display Seconds</label>
+              <input id="upsellDuration" value="30" />
+            </div>
+            <div class="admin-field">
+              <label>Theme</label>
+              <select id="upsellTheme">
+                <option value="gold">Gold Buzzer</option>
+                <option value="blackgold">Black Gold</option>
+                <option value="vip">VIP Glow</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-actions admin-actions-remote">
+            <button class="admin-btn" id="saveUpsellBtn" type="button">Save Upsell</button>
+            <button class="admin-btn" id="previewUpsellBtn" type="button">Preview on Tablet</button>
+            <button class="admin-btn" id="remoteEndTripBtn" type="button">End Trip</button>
+          </div>
+        </details>
+
         <details class="simple-details">
           <summary>Message</summary>
           <div class="admin-grid">
