@@ -76,6 +76,13 @@ let currentMusicMode = "executive";
 let requestQueue = [];
 let requestQueueIndex = 0;
 let requestQueueActive = false;
+let requestQueueContinuous = false;
+let requestQueueSignature = "";
+let musicPlaylistQueue = [];
+let musicPlaylistIndex = 0;
+let musicPlaylistActive = false;
+let musicPlaylistTimer = null;
+let currentStylPlaylistKey = "executive";
 let requestQueueTimer = null;
 const requestQueueFallbackSeconds = 240;
 const requestQueueMinSeconds = 75;
@@ -95,6 +102,63 @@ async function broadcastRemoteCommand(command, extra = {}) {
     console.error("Broadcast command failed", e);
   }
 }
+
+
+
+function applyEndTripUpsellContent() {
+  const upsell = config.endTripUpsell || {};
+  const headline = upsell.headline || "Thanks for riding with STYL";
+  const body = upsell.body || "Enjoy $15 off your next ride.";
+  const promo = upsell.promo || "SPECIAL10";
+  const badge = upsell.badge || "VIP OFFER UNLOCKED";
+  const buttonText = upsell.buttonText || "Book Your Next Ride";
+  const buttonLink = upsell.buttonLink || `https://stylblackcar.com/?promo=${encodeURIComponent(promo)}&source=end_trip_offer`;
+  const theme = upsell.theme || "gold";
+
+  const overlay = byId("endTripOverlay");
+  if (overlay) {
+    overlay.classList.remove("theme-gold", "theme-blackgold", "theme-vip");
+    overlay.classList.add(`theme-${theme}`);
+  }
+
+  const setText = (id, text) => {
+    const el = byId(id);
+    if (el) el.textContent = text;
+  };
+
+  setText("endTripHeadline", headline);
+  setText("endTripBody", body);
+  setText("endTripPromo", promo);
+  setText("endTripBadge", badge);
+  setText("endTripButtonText", buttonText);
+
+  const link = byId("endTripBookBtn");
+  if (link) link.href = buttonLink;
+}
+
+
+function showEndTripOverlay() {
+  applyEndTripUpsellContent();
+  const overlay = byId("endTripOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("hidden");
+  overlay.classList.add("show");
+  const seconds = Number(config.endTripUpsell?.duration || 30);
+  clearTimeout(window.__stylEndTripTimer);
+  window.__stylEndTripTimer = setTimeout(hideEndTripOverlay, Math.max(8, seconds) * 1000);
+}
+
+function hideEndTripOverlay() {
+  const overlay = byId("endTripOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("show");
+  setTimeout(() => overlay.classList.add("hidden"), 400);
+}
+
+function initEndTripOverlay() {
+  byId("endTripCloseBtn")?.addEventListener("click", hideEndTripOverlay);
+}
+
 
 function refreshMusicModeUrls() {
   if (!config.musicModes) return;
@@ -642,16 +706,303 @@ async function scheduleSmartQueueTimer(videoId) {
   setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length} • Next in ${display}`);
 }
 
-function startRequestQueue(queue = []) {
-  requestQueue = Array.isArray(queue) ? queue.filter(item => item && (item.query || item.videoId)) : [];
-  requestQueueIndex = 0;
-  requestQueueActive = requestQueue.length > 0;
 
-  if (!requestQueueActive) {
-    setYouTubePanelStatus("Queue is empty.");
+const stylSmartPlaylists = {
+  executive: {
+    title: "Executive",
+    description: "Smooth jazz, lounge, and luxury executive ride music.",
+    pool: ["Kenny G Songbird","Kenny G Forever In Love","Sade No Ordinary Love","Sade Smooth Operator","George Benson Give Me The Night","Boney James Sweet Thing","Grover Washington Jr Just The Two Of Us","David Sanborn The Dream","Najee Sweet Love","Norman Brown After The Storm","Kirk Whalum My All","Dave Koz Together Again","Brian Culbertson On My Mind","Gerald Albright Bermuda Nights","Peter White Midnight In Manhattan"]
+  },
+  vibe: {
+    title: "Vibe",
+    description: "Modern smooth R&B and relaxed city ride energy.",
+    pool: ["Tems Free Mind","Wizkid Essence","Drake One Dance","Burna Boy For My Hand","H.E.R. Focus","Daniel Caesar Best Part","SZA Snooze","Brent Faiyaz All Mine","Giveon Heartbreak Anniversary","Chris Brown Under The Influence","Ella Mai Boo'd Up","Summer Walker Girls Need Love","Miguel Adorn","Frank Ocean Thinkin Bout You","Tyla Water"]
+  },
+  party: {
+    title: "Party",
+    description: "High-energy clean party mode for events and nightlife.",
+    pool: ["Beyonce Cuff It","Usher Yeah","Bruno Mars 24K Magic","Rema Calm Down","Davido Unavailable","Burna Boy Last Last","Tyla Water","Chris Brown Go Crazy","Drake Nice For What","Black Eyed Peas I Gotta Feeling","Justin Timberlake Can't Stop The Feeling","Dua Lipa Levitating","Pharrell Happy","Sean Paul Temperature","Rihanna Please Don't Stop The Music"]
+  },
+  rnb80s: {
+    title: "R&B 80s",
+    description: "Classic R&B, soul, and throwback favorites.",
+    pool: ["Anita Baker Sweet Love","Luther Vandross Never Too Much","Sade The Sweetest Taboo","Keith Sweat I Want Her","New Edition Can You Stand The Rain","Bobby Brown Every Little Step","Janet Jackson That's The Way Love Goes","Teddy Pendergrass Close The Door","The Isley Brothers Between The Sheets","Michael Jackson Human Nature","Freddie Jackson You Are My Lady","Babyface Whip Appeal","Guy Piece Of My Love","Troop All I Do Is Think Of You","Atlantic Starr Secret Lovers"]
+  },
+  afrobeats: {
+    title: "Afrobeats",
+    description: "Premium Afrobeats ride playlist.",
+    pool: ["Rema Calm Down","Burna Boy Last Last","Wizkid Essence","Davido Unavailable","Asake Lonely At The Top","Ayra Starr Rush","CKay Love Nwantiti","Kizz Daniel Buga","Tyla Water","Fireboy DML Peru","Omah Lay Soso","Tekno Pana","P-Square Personally","Flavour Nwa Baby","Tiwa Savage Somebody's Son"]
+  },
+  spotify: {
+    title: "Spotify Requests",
+    description: "Rider request inspiration and popular ride selections.",
+    pool: ["Afrobeats latest hits","Smooth jazz lounge music","R&B 80s classics","Top clean party songs","Luxury lounge music","Kenny G greatest hits","Sade greatest hits","Wizkid Essence","Burna Boy Last Last","Rema Calm Down"]
+  }
+};
+
+function shuffleSongs(pool = [], limit = 10) {
+  const copy = [...pool];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, Math.min(limit, copy.length));
+}
+
+function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
+  const list = stylSmartPlaylists[key] || stylSmartPlaylists.executive;
+  return shuffleSongs(list.pool, 10).map(song => ({ query: song, label: song }));
+}
+
+function renderMusicPlaylistBrowser() {
+  const box = byId("musicPlaylistBrowser");
+  if (!box) return;
+  const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
+  const list = stylSmartPlaylists[active];
+
+  if (!musicPlaylistQueue.length || !musicPlaylistQueue[0]?.query) {
+    musicPlaylistQueue = buildStylPlaylistQueue(active);
+    musicPlaylistIndex = 0;
+  }
+
+  box.innerHTML = `
+    <div class="music-browser-head">
+      <div>
+        <div class="queue-title">STYL ${list.title} Playlist</div>
+        <div class="queue-copy">Dynamic queue • reshuffles every session • continuous autoplay</div>
+      </div>
+      <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
+    </div>
+    <div class="styl-playlist-tabs">
+      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
+      `).join("")}
+    </div>
+    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
+    <div class="styl-playlist-list">
+      ${musicPlaylistQueue.map((item, index) => `
+        <button type="button" class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}">
+          <span>${index + 1}. ${item.label}</span>
+          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
+        </button>
+      `).join("")}
+    </div>
+    <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
+  `;
+
+  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
+      currentMusicMode = currentStylPlaylistKey;
+      musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+      musicPlaylistIndex = 0;
+      musicPlaylistActive = false;
+      clearMusicPlaylistTimer();
+      setMusicMode(currentStylPlaylistKey);
+      renderMusicPlaylistBrowser();
+  initEndTripOverlay();
+    });
+  });
+
+  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index)) {
+        musicPlaylistIndex = index;
+        musicPlaylistActive = true;
+        playMusicPlaylistCurrent();
+      }
+    });
+  });
+
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
+    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+    musicPlaylistActive = false;
+    clearMusicPlaylistTimer();
+    renderMusicPlaylistBrowser();
+  });
+
+  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
+    musicPlaylistActive = true;
+    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    playMusicPlaylistCurrent();
+  });
+}
+
+function clearMusicPlaylistTimer() {
+  if (musicPlaylistTimer) {
+    clearTimeout(musicPlaylistTimer);
+    musicPlaylistTimer = null;
+  }
+}
+
+async function searchFirstYouTubeVideoId(query) {
+  const directId = extractYouTubeVideoId(query);
+  if (directId) return directId;
+  if (!config.youtubeApiKey) return "";
+  try {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) return "";
+    const json = await res.json();
+    return json.items?.[0]?.id?.videoId || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+async function playMusicPlaylistCurrent() {
+  if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+  if (musicPlaylistIndex >= musicPlaylistQueue.length) {
+    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+  }
+
+  const item = musicPlaylistQueue[musicPlaylistIndex];
+  const frame = byId("musicFrame");
+  if (!frame || !item) return;
+
+  showView("music", "Play Music", "musicBtn");
+  musicPlaylistActive = true;
+  clearMusicPlaylistTimer();
+
+  const videoId = await searchFirstYouTubeVideoId(item.query);
+  if (videoId) {
+    frame.src = "about:blank";
+    setTimeout(() => { frame.src = buildYouTubeVideoUrl(videoId); }, 100);
+    scheduleMusicPlaylistNext(videoId);
+  } else {
+    frame.src = buildYouTubeFallbackUrl(item.query);
+    musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
+  }
+
+  renderMusicPlaylistBrowser();
+}
+
+async function scheduleMusicPlaylistNext(videoId) {
+  clearMusicPlaylistTimer();
+  let seconds = await getYouTubeVideoDurationSeconds(videoId);
+  if (!seconds) seconds = requestQueueFallbackSeconds;
+  seconds = Math.max(75, Math.min(720, seconds + 8));
+  musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, seconds * 1000);
+}
+
+function playNextMusicPlaylistSong() {
+  if (!musicPlaylistActive) return;
+  musicPlaylistIndex += 1;
+  if (musicPlaylistIndex >= musicPlaylistQueue.length) {
+    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+  }
+  playMusicPlaylistCurrent();
+}
+
+function pauseMusicPlaylistForRequests() {
+  clearMusicPlaylistTimer();
+}
+
+function resumeMusicPlaylistAfterRequests() {
+  if (musicPlaylistActive) {
+    showView("music", "Play Music", "musicBtn");
+    playMusicPlaylistCurrent();
+  }
+}
+
+function normalizeRequestQueue(queue = []) {
+  return (Array.isArray(queue) ? queue : [])
+    .filter(item => item)
+    .map((item, index) => ({
+      query: String(item.query || "").trim(),
+      videoId: String(item.videoId || "").trim(),
+      label: String(item.label || item.query || item.videoId || `Request ${index + 1}`).trim(),
+      pending: !(item.query || item.videoId)
+    }));
+}
+
+function queueSignature(queue = []) {
+  return normalizeRequestQueue(queue).map(item => `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`).join("||");
+}
+
+function renderRequestQueuePanel() {
+  const box = byId("youtubeQueuePanel");
+  if (!box) return;
+
+  if (!requestQueue.length) {
+    box.innerHTML = `<div class="queue-title">STYL Request Queue</div><div class="queue-empty">No active rider requests yet.</div>`;
     return;
   }
 
+  box.innerHTML = `
+    <div class="queue-title">STYL Request Queue</div>
+    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous play ON" : "Queue loaded"}</div>
+    ${requestQueue.map((item, index) => `
+      <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
+        <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
+        <small>${index === requestQueueIndex && requestQueueActive ? "Now playing" : (item.pending ? "Pending details" : "Tap to play")}</small>
+      </button>
+    `).join("")}
+  `;
+
+  box.querySelectorAll(".queue-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index) && requestQueue[index]) {
+        requestQueueIndex = index;
+        requestQueueActive = true;
+        pauseMusicPlaylistForRequests();
+        showView("youtube", "YouTube Lounge", "youtubeBtn");
+        playCurrentQueueItem();
+      }
+    });
+  });
+}
+
+function updateContinuousRequestQueue(queue = []) {
+  const nextQueue = normalizeRequestQueue(queue);
+  const nextSignature = queueSignature(nextQueue);
+
+  if (!nextQueue.length) {
+    requestQueue = [];
+    requestQueueIndex = 0;
+    requestQueueActive = false;
+    requestQueueContinuous = true;
+    requestQueueSignature = "";
+    renderRequestQueuePanel();
+    setYouTubePanelStatus("Continuous queue is on. Waiting for rider requests.");
+    return;
+  }
+
+  if (!requestQueueActive || !requestQueue.length) {
+    startRequestQueue(nextQueue, true);
+    return;
+  }
+
+  if (nextSignature !== requestQueueSignature) {
+    requestQueue = nextQueue;
+    requestQueueSignature = nextSignature;
+    requestQueueContinuous = true;
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
+  }
+}
+
+
+function startRequestQueue(queue = [], continuous = false) {
+  requestQueue = normalizeRequestQueue(queue);
+  requestQueueIndex = 0;
+  requestQueueActive = requestQueue.length > 0;
+  requestQueueContinuous = !!continuous;
+  requestQueueSignature = queueSignature(requestQueue);
+  renderRequestQueuePanel();
+
+  if (!requestQueueActive) {
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for rider requests." : "Queue is empty.");
+    return;
+  }
+
+  pauseMusicPlaylistForRequests();
   showView("youtube", "YouTube Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
   playCurrentQueueItem();
@@ -664,9 +1015,10 @@ function playCurrentQueueItem() {
   if (item.videoId) {
     playYouTubePanelVideo(item.videoId);
   } else {
-    searchYouTubePanel(item.query || "", true);
+    searchYouTubePanel(item.query || item.label || "", true);
   }
   setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
+  renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
@@ -675,8 +1027,17 @@ function playNextQueueItem() {
   requestQueueIndex += 1;
 
   if (requestQueueIndex >= requestQueue.length) {
+    if (requestQueueContinuous) {
+      requestQueueActive = false;
+      requestQueueIndex = requestQueue.length;
+      renderRequestQueuePanel();
+      setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
+      resumeMusicPlaylistAfterRequests();
+      return;
+    }
     requestQueueActive = false;
     setYouTubePanelStatus("Request queue finished.");
+    resumeMusicPlaylistAfterRequests();
     return;
   }
 
@@ -693,11 +1054,13 @@ function initYouTubeQueueListener() {
       return;
     }
 
-    // YouTube iframe API sends infoDelivery with playerState 0 when video ends.
     const playerState = data?.info?.playerState;
     if (requestQueueActive && playerState === 0) {
       clearRequestQueueTimer();
       setTimeout(playNextQueueItem, 900);
+    } else if (musicPlaylistActive && currentView === "music" && playerState === 0) {
+      clearMusicPlaylistTimer();
+      setTimeout(playNextMusicPlaylistSong, 900);
     }
   });
 }
@@ -724,7 +1087,6 @@ function startRequestQueueTimer(seconds = requestQueueFallbackSeconds) {
   }, safeSeconds * 1000);
 }
 
-
 function initYouTubeSearchPanel() {
   byId("youtubePanelSearchBtn")?.addEventListener("click", () => { exitCinematicMode(); searchYouTubePanel(); });
   byId("youtubePanelInput")?.addEventListener("input", (e) => renderYouTubePanelSuggestions(e.target.value));
@@ -750,6 +1112,7 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
+  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
   if (currentMusicMode === "spotify") startSpotifyLiveSync();
   else stopSpotifyLiveSync();
   if (currentView === "music") {
@@ -886,11 +1249,14 @@ function applyProfile(data = {}) {
       else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || []); }
+      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
+      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
+      else if (cmd === "endtrip") { showEndTripOverlay(); }
+      else if (cmd === "previewupsell") { showEndTripOverlay(); }
       else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
@@ -984,6 +1350,7 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
+  renderMusicPlaylistBrowser();
   initSwipe();
   requestBrowserWeather();
   updateClock();
