@@ -223,28 +223,29 @@ function setSpotifySyncStatus(text) {
 
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
-  const defaultPanel = byId("stylDefaultPlaylistPanel");
   const qr = byId("spotifyRiderQr");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
   const isSpotify = currentMusicMode === "spotify";
   panel.classList.toggle("hidden", !isSpotify);
-  if (defaultPanel) defaultPanel.classList.toggle("hidden", isSpotify);
+  byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
-  const riderUrl = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
-  if (!riderUrl) {
-    qr.removeAttribute("src");
-    link.removeAttribute("href");
-    link.textContent = "Request Page Missing";
-    setSpotifySyncStatus("Set Spotify Rider Link in admin.");
-    return;
-  }
-
-  qr.src = buildQrUrl(riderUrl);
+  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
   link.href = riderUrl;
-  link.textContent = "Request Song";
-  setSpotifySyncStatus("Live Playlist Sync: Ready");
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
+}
+
+function refreshSpotifyFrameForLiveSync() {
+  if (currentMusicMode !== "spotify") return;
+  const frame = byId("musicFrame");
+  if (!frame) return;
+  const mode = config.musicModes?.spotify;
+  const url = mode?.embedUrl || config.spotifyMusicUrl;
+  if (!url) return;
+  frame.src = url;
+  const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  setSpotifySyncStatus("Live Playlist Sync: refreshed at " + time);
 }
 
 function startSpotifyLiveSync() {
@@ -749,29 +750,12 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  syncDefaultPlaylistButtons();
   if (currentMusicMode === "spotify") startSpotifyLiveSync();
   else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
   }
-}
-
-
-function syncDefaultPlaylistButtons() {
-  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode);
-  });
-}
-
-function initDefaultPlaylistPanel() {
-  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      setMusicMode(btn.dataset.musicMode || "executive");
-      showView("music", "Play Music", "musicBtn");
-    });
-  });
 }
 
 function updateGreetingHighlight() {
@@ -999,7 +983,6 @@ window.addEventListener("load", () => {
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
-  initDefaultPlaylistPanel();
   initYouTubeQueueListener();
   initSwipe();
   requestBrowserWeather();
