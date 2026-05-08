@@ -9,6 +9,7 @@ let requestsRef = null;
 let bookingClicksRef = null;
 let currentBookingClicksData = {};
 let currentRequestItems = [];
+let continuousQueueEnabled = false;
 
 const defaults = {
   newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0",
@@ -172,6 +173,8 @@ function renderRequests(data = {}) {
   list.querySelectorAll(".request-play-btn").forEach(btn => {
     btn.addEventListener("click", () => playRequestOnTablet(btn.dataset.query || ""));
   });
+
+  if (continuousQueueEnabled) sendContinuousQueueUpdate("Queue auto-updated");
 }
 
 async function playRequestOnTablet(query) {
@@ -184,22 +187,24 @@ async function playRequestOnTablet(query) {
 
 
 async function playAllRequestsQueue() {
+  continuousQueueEnabled = true;
+  await sendContinuousQueueUpdate("Continuous queue started");
+}
+
+async function sendContinuousQueueUpdate(statusText = "Queue updated") {
   const queue = (currentRequestItems || [])
     .map(item => ({
       query: `${item.title || ""} ${item.artist || ""}`.trim(),
-      videoId: extractYouTubeVideoId(item.link || "")
+      videoId: extractYouTubeVideoId(item.link || ""),
+      label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim()
     }))
-    .filter(item => item.query || item.videoId);
+    .filter(item => item.query || item.videoId || item.label);
 
-  if (!queue.length) {
-    setStatus("No song requests in queue");
-    return;
-  }
-
-  await sendRemote("youtubequeue", {
+  await sendRemote("youtubequeuecontinuous", {
     requestQueue: queue,
+    requestQueueContinuous: true,
     remoteNonce: Date.now()
-  }, `Playing ${queue.length} queued requests`);
+  }, queue.length ? `${statusText}: ${queue.length} requests` : "Continuous queue waiting for requests");
 }
 
 function listenForRequests() {
@@ -211,6 +216,7 @@ function listenForRequests() {
 }
 
 async function clearRequests() {
+  continuousQueueEnabled = false;
   if (!requestsRef) return;
   await remove(requestsRef);
   renderRequests({});
@@ -277,6 +283,53 @@ async function clearBookingClicks() {
   renderBookingPerformance({});
 }
 
+
+function getUpsellFormData() {
+  return {
+    headline: byId("upsellHeadline")?.value.trim() || "Thanks for riding with STYL",
+    body: byId("upsellBody")?.value.trim() || "Enjoy $15 off your next ride.",
+    promo: byId("upsellPromo")?.value.trim() || "SPECIAL10",
+    badge: byId("upsellBadge")?.value.trim() || "VIP OFFER UNLOCKED",
+    buttonText: byId("upsellButtonText")?.value.trim() || "Book Your Next Ride",
+    buttonLink: byId("upsellButtonLink")?.value.trim() || "https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer",
+    duration: Number(byId("upsellDuration")?.value || 30),
+    theme: byId("upsellTheme")?.value || "gold"
+  };
+}
+
+function fillUpsellForm(data = {}) {
+  const upsell = data.endTripUpsell || {};
+  if (byId("upsellHeadline")) byId("upsellHeadline").value = upsell.headline || "Thanks for riding with STYL";
+  if (byId("upsellBody")) byId("upsellBody").value = upsell.body || "Enjoy $15 off your next ride.";
+  if (byId("upsellPromo")) byId("upsellPromo").value = upsell.promo || "SPECIAL10";
+  if (byId("upsellBadge")) byId("upsellBadge").value = upsell.badge || "VIP OFFER UNLOCKED";
+  if (byId("upsellButtonText")) byId("upsellButtonText").value = upsell.buttonText || "Book Your Next Ride";
+  if (byId("upsellButtonLink")) byId("upsellButtonLink").value = upsell.buttonLink || "https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer";
+  if (byId("upsellDuration")) byId("upsellDuration").value = upsell.duration || 30;
+  if (byId("upsellTheme")) byId("upsellTheme").value = upsell.theme || "gold";
+}
+
+async function saveUpsellSettings() {
+  if (!liveDoc) return;
+  await update(liveDoc, {
+    endTripUpsell: getUpsellFormData(),
+    updatedAt: new Date().toISOString()
+  });
+  setStatus("Upsell settings saved");
+}
+
+async function triggerEndTripUpsell(command = "endtrip", label = "End Trip Offer") {
+  if (!liveDoc) return;
+  await update(liveDoc, {
+    endTripUpsell: getUpsellFormData(),
+    remoteCommand: command,
+    remoteNonce: Date.now(),
+    updatedAt: new Date().toISOString()
+  });
+  setStatus(label);
+}
+
+
 async function loadLiveProfile() {
   const app = initializeApp(firebaseConfig);
   db = getDatabase(app);
@@ -332,6 +385,9 @@ window.addEventListener("load", async () => {
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
   byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
+  byId("saveUpsellBtn")?.addEventListener("click", saveUpsellSettings);
+  byId("previewUpsellBtn")?.addEventListener("click", () => triggerEndTripUpsell("previewupsell", "Preview Upsell"));
+  byId("remoteEndTripBtn")?.addEventListener("click", () => triggerEndTripUpsell("endtrip", "End Trip Offer"));
 
   byId("musicExecutiveBtn")?.addEventListener("click", () => sendMusicMode("executive", "Music: Executive"));
   byId("musicVibeBtn")?.addEventListener("click", () => sendMusicMode("vibe", "Music: Vibe"));
