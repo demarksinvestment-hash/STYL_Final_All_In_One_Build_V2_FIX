@@ -9,7 +9,6 @@ let requestsRef = null;
 let bookingClicksRef = null;
 let currentBookingClicksData = {};
 let currentRequestItems = [];
-let continuousQueueEnabled = false;
 
 const defaults = {
   newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0",
@@ -173,8 +172,6 @@ function renderRequests(data = {}) {
   list.querySelectorAll(".request-play-btn").forEach(btn => {
     btn.addEventListener("click", () => playRequestOnTablet(btn.dataset.query || ""));
   });
-
-  if (continuousQueueEnabled) sendContinuousQueueUpdate("Queue auto-updated");
 }
 
 async function playRequestOnTablet(query) {
@@ -187,24 +184,22 @@ async function playRequestOnTablet(query) {
 
 
 async function playAllRequestsQueue() {
-  continuousQueueEnabled = true;
-  await sendContinuousQueueUpdate("Continuous queue started");
-}
-
-async function sendContinuousQueueUpdate(statusText = "Queue updated") {
   const queue = (currentRequestItems || [])
     .map(item => ({
       query: `${item.title || ""} ${item.artist || ""}`.trim(),
-      videoId: extractYouTubeVideoId(item.link || ""),
-      label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim()
+      videoId: extractYouTubeVideoId(item.link || "")
     }))
-    .filter(item => item.query || item.videoId || item.label);
+    .filter(item => item.query || item.videoId);
 
-  await sendRemote("youtubequeuecontinuous", {
+  if (!queue.length) {
+    setStatus("No song requests in queue");
+    return;
+  }
+
+  await sendRemote("youtubequeue", {
     requestQueue: queue,
-    requestQueueContinuous: true,
     remoteNonce: Date.now()
-  }, queue.length ? `${statusText}: ${queue.length} requests` : "Continuous queue waiting for requests");
+  }, `Playing ${queue.length} queued requests`);
 }
 
 function listenForRequests() {
@@ -216,7 +211,6 @@ function listenForRequests() {
 }
 
 async function clearRequests() {
-  continuousQueueEnabled = false;
   if (!requestsRef) return;
   await remove(requestsRef);
   renderRequests({});
@@ -338,7 +332,6 @@ window.addEventListener("load", async () => {
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
   byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
-  byId("remoteEndTripBtn")?.addEventListener("click", () => sendRemote("endtrip", { remoteNonce: Date.now() }, "End Trip Offer"));
 
   byId("musicExecutiveBtn")?.addEventListener("click", () => sendMusicMode("executive", "Music: Executive"));
   byId("musicVibeBtn")?.addEventListener("click", () => sendMusicMode("vibe", "Music: Vibe"));
