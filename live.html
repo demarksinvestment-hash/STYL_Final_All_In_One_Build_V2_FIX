@@ -133,6 +133,7 @@
                     <div id="youtubePanelSuggestions" class="youtube-panel-suggestions hidden"></div>
                     <div id="youtubePanelResults" class="youtube-panel-results hidden"></div>
                     <div id="youtubePanelStatus" class="youtube-panel-status">Ready. Paste your YouTube API key in admin for exact results.</div>
+                    <div id="youtubeQueuePanel" class="youtube-queue-panel"><div class="queue-empty">No active rider requests yet.</div></div>
                   </div>
 
                   
@@ -166,6 +167,7 @@
                     </div>
                   </div>
                   </div>
+                  <div id="musicPlaylistBrowser" class="music-playlist-browser"></div>
                 </div>
               </div>
             </section>
@@ -190,6 +192,20 @@
   </main>
 
   <script>setTimeout(function(){var s=document.getElementById("welcomeSplash");if(s){s.style.display="none";s.classList.add("force-hide");}},3500);</script>
+  <div id="endTripOverlay" class="end-trip-overlay hidden theme-gold">
+    <div class="end-trip-card">
+      <div class="gold-buzzer-wrap">
+        <div class="gold-buzzer-shine"></div>
+        <div class="gold-buzzer">STYL</div>
+      </div>
+      <div id="endTripBadge" class="end-trip-kicker">VIP OFFER UNLOCKED</div>
+      <h2 id="endTripHeadline">Thanks for riding with STYL</h2>
+      <p id="endTripBody">Enjoy $15 off your next ride.</p>
+      <div class="end-trip-code">Use promo code <strong id="endTripPromo">SPECIAL10</strong></div>
+      <a id="endTripBookBtn" class="end-trip-book-btn" href="https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer" target="_blank" rel="noopener"><span id="endTripButtonText">Book Your Next Ride</span></a>
+      <button id="endTripCloseBtn" class="end-trip-close-btn" type="button">Close</button>
+    </div>
+  </div>
   <script type="module" src="dashboard-firebase.js"></script>
 </body>
 </html>
