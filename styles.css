@@ -1356,3 +1356,70 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
 .end-trip-overlay.theme-vip .gold-buzzer{
   animation:buzzerPulse .9s infinite ease-in-out;
 }
+
+/* STYL SAFE IFRAME SIZE PATCH */
+/* Keeps all STYL Editable Upsell Engine logic intact */
+
+#musicView .music-system{
+  height:100%;
+  min-height:0;
+}
+
+#musicView .music-panel{
+  height:100%;
+  min-height:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+  gap:10px;
+}
+
+#musicView #musicContentLayout{
+  height:100%;
+  min-height:0;
+}
+
+#musicView .music-embed-wrap{
+  width:100%;
+  height:100%;
+  min-height:520px;
+  overflow:hidden;
+  border-radius:18px;
+  background:#000;
+}
+
+#musicView iframe#musicFrame{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:520px;
+  border:0;
+}
+
+/* Keep Spotify QR inside frame */
+#musicView #spotifyRiderPanel{
+  margin-top:12px;
+}
+
+#musicView .spotify-rider-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+#musicView .spotify-rider-qr,
+#musicView #spotifyRiderQr{
+  width:220px !important;
+  height:220px !important;
+  max-width:92%;
+  object-fit:contain;
+}
+
+/* Tablet/mobile safe */
+@media (max-width:980px){
+  #musicView .music-embed-wrap,
+  #musicView iframe#musicFrame{
+    min-height:360px;
+  }
+}
