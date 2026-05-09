@@ -34,6 +34,7 @@ const config = {
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
+  syncStartAt: 0,
   musicModes: {
     executive: {
       title: "Executive Mode",
@@ -1213,6 +1214,13 @@ async function requestBrowserWeather() {
   }
 }
 
+
+function runAtSyncedStart(callback) {
+  const startAt = Number(config.syncStartAt || 0);
+  const wait = startAt ? Math.max(0, startAt - Date.now()) : 0;
+  setTimeout(callback, wait);
+}
+
 function applyProfile(data = {}) {
   Object.assign(config, data || {});
   refreshMusicModeUrls();
@@ -1241,19 +1249,19 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Watch News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
-      else if (cmd === "music") showView("music", "Play Music", "musicBtn");
-      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
-      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
+      if (cmd === "news") runAtSyncedStart(() => showView("news", "Watch News", "newsBtn"));
+      else if (cmd === "sports") runAtSyncedStart(() => showView("sports", "Watch Sports", "sportsBtn"));
+      else if (cmd === "music") runAtSyncedStart(() => showView("music", "Play Music", "musicBtn"));
+      else if (cmd === "youtubepanel") { runAtSyncedStart(() => { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }); }
+      else if (cmd === "youtubequeue") { runAtSyncedStart(() => startRequestQueue(config.requestQueue || [], false)); }
+      else if (cmd === "youtubequeuecontinuous") { runAtSyncedStart(() => updateContinuousRequestQueue(config.requestQueue || [])); }
+      else if (cmd === "youtube") runAtSyncedStart(() => showView("youtube", "YouTube Lounge", "youtubeBtn"));
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
       else if (cmd === "endtrip") { showEndTripOverlay(); }
       else if (cmd === "previewupsell") { showEndTripOverlay(); }
-      else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
+      else if (cmd === "home") runAtSyncedStart(() => showView("home", "STYL Home", "homeBtn"));
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
     }
