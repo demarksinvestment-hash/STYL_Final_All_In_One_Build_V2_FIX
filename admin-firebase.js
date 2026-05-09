@@ -78,9 +78,28 @@ async function saveSources() {
   await savePayload(payload, "Stable sources saved");
 }
 
+
+function getSyncStartAt(command) {
+  const syncCommands = new Set([
+    "home",
+    "youtube",
+    "news",
+    "sports",
+    "music",
+    "youtubepanel",
+    "youtubequeue",
+    "youtubequeuecontinuous"
+  ]);
+
+  return syncCommands.has(String(command || "").toLowerCase())
+    ? Date.now() + 1800
+    : 0;
+}
+
 async function sendRemote(command, extra = {}, label = "Remote Sent") {
   const payload = buildProfile();
   payload.remoteCommand = command;
+  payload.syncStartAt = getSyncStartAt(command);
   Object.assign(payload, extra);
   renderPreview(label);
   await savePayload(payload, label);
