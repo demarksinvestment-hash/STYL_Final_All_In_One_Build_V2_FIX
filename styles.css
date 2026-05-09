@@ -1381,3 +1381,166 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   padding:7px;
   border-radius:14px;
 }
+
+/* SPOTIFY QR HOTFIX ASAP */
+#musicView #musicContentLayout.spotify-visible{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1.55fr) minmax(280px, .9fr) !important;
+  gap:14px !important;
+  align-items:stretch !important;
+}
+
+#musicView #musicContentLayout.spotify-visible .music-embed-wrap{
+  min-height:420px !important;
+  height:100% !important;
+}
+
+#musicView #spotifyRiderPanel{
+  border:1px solid rgba(212,175,55,.35);
+  border-radius:18px;
+  background:rgba(0,0,0,.45);
+  padding:16px;
+  box-sizing:border-box;
+}
+
+#musicView #musicContentLayout.spotify-visible #spotifyRiderPanel{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 !important;
+  height:100% !important;
+  min-height:420px !important;
+  overflow:auto !important;
+}
+
+#musicView #spotifyRiderPanel.hidden{
+  display:none !important;
+}
+
+#musicView .spotify-rider-title{
+  color:#d4af37;
+  font-weight:1000;
+  font-size:1.15rem;
+  margin-bottom:8px;
+  text-align:center;
+}
+
+#musicView .spotify-rider-copy,
+#musicView .spotify-sync-status{
+  color:#f5d98a;
+  text-align:center;
+  line-height:1.35;
+}
+
+#musicView .spotify-rider-row{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:14px !important;
+  width:100% !important;
+  margin-top:12px !important;
+}
+
+#musicView .spotify-rider-qr,
+#musicView #spotifyRiderQr{
+  display:block !important;
+  width:240px !important;
+  height:240px !important;
+  max-width:92% !important;
+  object-fit:contain !important;
+  background:#fff !important;
+  padding:8px !important;
+  border-radius:16px !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.35) !important;
+}
+
+#musicView .spotify-rider-btn{
+  width:100% !important;
+  max-width:250px !important;
+}
+
+@media(max-width:980px){
+  #musicView #musicContentLayout.spotify-visible{
+    grid-template-columns:1fr !important;
+  }
+}
+
+/* FINAL SPOTIFY QR GUARANTEED VISIBILITY */
+#musicView #spotifyRiderPanel{
+  border:1px solid rgba(212,175,55,.35);
+  border-radius:18px;
+  background:rgba(0,0,0,.55);
+  padding:16px;
+  box-sizing:border-box;
+  text-align:center;
+}
+
+#musicView #musicContentLayout.spotify-visible #spotifyRiderPanel,
+#spotifyRiderPanel:not(.hidden){
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:260px !important;
+}
+
+#spotifyRiderPanel.hidden{
+  display:none !important;
+}
+
+.spotify-rider-row{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:14px !important;
+  width:100% !important;
+}
+
+.spotify-rider-qr,
+#spotifyRiderQr{
+  display:block !important;
+  width:240px !important;
+  height:240px !important;
+  max-width:92% !important;
+  object-fit:contain !important;
+  background:#fff !important;
+  padding:8px !important;
+  border-radius:16px !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.35) !important;
+}
+
+.spotify-qr-fallback{
+  width:240px;
+  max-width:92%;
+  min-height:120px;
+  border-radius:16px;
+  border:1px solid rgba(212,175,55,.45);
+  background:rgba(212,175,55,.12);
+  color:#f5d98a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  box-sizing:border-box;
+  font-weight:800;
+  line-height:1.35;
+}
+
+.spotify-qr-fallback.hidden{
+  display:none !important;
+}
+
+.spotify-rider-title{
+  color:#d4af37;
+  font-weight:1000;
+  font-size:1.18rem;
+}
+
+.spotify-rider-copy,
+.spotify-sync-status{
+  color:#f5d98a;
+  line-height:1.35;
+}
