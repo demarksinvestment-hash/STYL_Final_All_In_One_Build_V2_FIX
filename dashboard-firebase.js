@@ -799,7 +799,8 @@ function renderMusicPlaylistBrowser() {
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
       setMusicMode(currentStylPlaylistKey);
-      initEndTripOverlay();
+      renderMusicPlaylistBrowser();
+  initEndTripOverlay();
     });
   });
 
@@ -819,7 +820,8 @@ function renderMusicPlaylistBrowser() {
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
     clearMusicPlaylistTimer();
-    });
+    renderMusicPlaylistBrowser();
+  });
 
   byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
     musicPlaylistActive = true;
@@ -875,6 +877,7 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
+  renderMusicPlaylistBrowser();
 }
 
 async function scheduleMusicPlaylistNext(videoId) {
@@ -1109,7 +1112,8 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function') if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
+  if (currentMusicMode === "spotify") startSpotifyLiveSync();
   else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
@@ -1346,6 +1350,7 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
+  renderMusicPlaylistBrowser();
   initSwipe();
   requestBrowserWeather();
   updateClock();
