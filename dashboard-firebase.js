@@ -286,9 +286,20 @@ function setSpotifySyncStatus(text) {
   if (el) el.textContent = text;
 }
 
+
+function getSpotifyRequestUrl() {
+  const url = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
+  return url || "https://demarksinvestment-hash.github.io/STYL_Smart_Timing_Cinematic_Click_ROI/request.html";
+}
+
+function makeQrUrl(data, size = 240) {
+  return "https://api.qrserver.com/v1/create-qr-code/?size=" + size + "x" + size + "&data=" + encodeURIComponent(data);
+}
+
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
   const qr = byId("spotifyRiderQr");
+  const fallback = byId("spotifyQrFallback");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
@@ -296,9 +307,35 @@ function updateSpotifyRiderPanel() {
   panel.classList.toggle("hidden", !isSpotify);
   byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
-  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
+  const riderUrl = getSpotifyRequestUrl();
   link.href = riderUrl;
-  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
+  link.textContent = "Request Song";
+  link.setAttribute("data-url", riderUrl);
+
+  if (fallback) {
+    fallback.classList.add("hidden");
+    fallback.textContent = "QR not loaded — tap Request Song below.";
+  }
+
+  // Cache-bust because GitHub Pages/tablet browsers sometimes keep a broken QR image.
+  const qrUrl = makeQrUrl(riderUrl, 240) + "&t=" + encodeURIComponent(String(Date.now()));
+  qr.alt = "Scan to request a song";
+  qr.style.display = "block";
+  qr.onerror = () => {
+    qr.onerror = null;
+    qr.style.display = "none";
+    if (fallback) {
+      fallback.classList.remove("hidden");
+      fallback.innerHTML = `QR image blocked. Tap <strong>Request Song</strong>.`;
+    }
+  };
+  qr.onload = () => {
+    qr.style.display = "block";
+    if (fallback) fallback.classList.add("hidden");
+  };
+  qr.src = qrUrl;
+
+  setSpotifySyncStatus(isSpotify ? "Scan QR to request a song." : "Live Playlist Sync: Ready");
 }
 
 function refreshSpotifyFrameForLiveSync() {
@@ -1109,13 +1146,16 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
+    if (currentMusicMode === "spotify") {
+      byId("musicFrame").src = "about:blank";
+    } else {
+      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
+    }
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
   if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  if (currentMusicMode === "spotify") startSpotifyLiveSync();
-  else stopSpotifyLiveSync();
+  stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
