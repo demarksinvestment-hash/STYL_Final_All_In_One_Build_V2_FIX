@@ -17,7 +17,7 @@ const config = {
   partyMusicUrl: "https://www.youtube.com/embed/videoseries?list=PLFgquLnL59amEA53azfP6qWD5F3eVQfmx&enablejsapi=1&rel=0",
   rnb80sMusicUrl: "https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0",
   afrobeatsMusicUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
-  spotifyMusicUrl: "",
+  spotifyMusicUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
   spotifyRiderUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
@@ -61,9 +61,9 @@ const config = {
       embedUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0"
     },
     spotify: {
-      title: "Play Your Music",
-      description: "Scan the QR code to request your favorite song.",
-      embedUrl: ""
+      title: "Spotify",
+      description: "Let riders choose their own music on Spotify.",
+      embedUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator"
     }
   },
   weatherFallback: { temp: "--", icon: "☀️", text: "Weather unavailable" }
@@ -167,16 +167,16 @@ function refreshMusicModeUrls() {
   if (config.musicModes.party) config.musicModes.party.embedUrl = config.partyMusicUrl;
   if (config.musicModes.rnb80s) config.musicModes.rnb80s.embedUrl = config.rnb80sMusicUrl;
   if (config.musicModes.afrobeats) config.musicModes.afrobeats.embedUrl = config.afrobeatsMusicUrl;
-  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = "";
+  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = config.spotifyMusicUrl;
 }
 
-function isPlay Your MusicUrl(url) {
+function isSpotifyUrl(url) {
   return typeof url === "string" && url.includes("open.spotify.com/embed");
 }
 
 function forceAutoplay(url) {
   if (!url) return url;
-  if (isPlay Your MusicUrl(url)) return url;
+  if (isSpotifyUrl(url)) return url;
   let finalUrl = url;
   if (!/autoplay=1/.test(finalUrl)) finalUrl += (finalUrl.includes("?") ? "&" : "?") + "autoplay=1";
   if (!/mute=1/.test(finalUrl)) finalUrl += "&mute=1";
@@ -187,7 +187,7 @@ function forceAutoplay(url) {
 
 function safeEmbed(url) {
   if (!url) return url;
-  if (isPlay Your MusicUrl(url)) return url;
+  if (isSpotifyUrl(url)) return url;
   let finalUrl = url;
   if (!/enablejsapi=1/.test(finalUrl)) finalUrl += (finalUrl.includes("?") ? "&" : "?") + "enablejsapi=1";
   if (!/rel=0/.test(finalUrl)) finalUrl += "&rel=0";
@@ -285,42 +285,39 @@ function setSpotifySyncStatus(text) {
   if (el) el.textContent = text;
 }
 
-
-function getPlayYourMusicRequestUrl() {
-  const url = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
-  return url || "https://demarksinvestment-hash.github.io/STYL_Smart_Timing_Cinematic_Click_ROI/request.html";
-}
-
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
   const qr = byId("spotifyRiderQr");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
-  const isPlayYourMusic = currentMusicMode === "spotify";
-  panel.classList.toggle("hidden", !isPlayYourMusic);
-  byId("musicContentLayout")?.classList.toggle("spotify-visible", isPlayYourMusic);
+  const isSpotify = currentMusicMode === "spotify";
+  panel.classList.toggle("hidden", !isSpotify);
+  byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
-  const riderUrl = getPlayYourMusicRequestUrl();
+  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
   link.href = riderUrl;
-  link.textContent = "Request Your Music";
-
-  qr.alt = "Scan to request your music";
-  qr.onerror = () => {
-    qr.onerror = null;
-    qr.src = "styl_request_qr.png";
-  };
-  qr.src = "styl_request_qr.png";
-
-  setSpotifySyncStatus(isPlayYourMusic ? "Scan QR or tap Request Your Music." : "Request QR Ready");
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
 }
 
 function refreshSpotifyFrameForLiveSync() {
-  return;
+  if (currentMusicMode !== "spotify") return;
+  const frame = byId("musicFrame");
+  if (!frame) return;
+  const mode = config.musicModes?.spotify;
+  const url = mode?.embedUrl || config.spotifyMusicUrl;
+  if (!url) return;
+  frame.src = url;
+  const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  setSpotifySyncStatus("Live Playlist Sync: refreshed at " + time);
 }
 
 function startSpotifyLiveSync() {
-  return;
+  stopSpotifyLiveSync();
+  if (!config.spotifySyncEnabled || currentMusicMode !== "spotify") return;
+  const interval = Math.max(15, Number(config.spotifySyncIntervalSeconds || 25)) * 1000;
+  setSpotifySyncStatus("Live Playlist Sync: active");
+  spotifySyncTimer = setInterval(refreshSpotifyFrameForLiveSync, interval);
 }
 
 function stopSpotifyLiveSync() {
@@ -458,7 +455,7 @@ function unmuteActiveMediaPlayer() {
 
 function showActiveSoundOverlay() {
   const frameId = getActiveMediaFrameId();
-  if (frameId === "musicFrame" && isPlay Your MusicUrl(config.musicModes[currentMusicMode]?.embedUrl || "")) return;
+  if (frameId === "musicFrame" && isSpotifyUrl(config.musicModes[currentMusicMode]?.embedUrl || "")) return;
   hideAllTapForSoundOverlays();
   showTapForSoundOverlayForFrame(frameId, true);
 }
@@ -737,7 +734,7 @@ const stylSmartPlaylists = {
     pool: ["Rema Calm Down","Burna Boy Last Last","Wizkid Essence","Davido Unavailable","Asake Lonely At The Top","Ayra Starr Rush","CKay Love Nwantiti","Kizz Daniel Buga","Tyla Water","Fireboy DML Peru","Omah Lay Soso","Tekno Pana","P-Square Personally","Flavour Nwa Baby","Tiwa Savage Somebody's Son"]
   },
   spotify: {
-    title: "Play Your Music",
+    title: "Spotify Requests",
     description: "Rider request inspiration and popular ride selections.",
     pool: ["Afrobeats latest hits","Smooth jazz lounge music","R&B 80s classics","Top clean party songs","Luxury lounge music","Kenny G greatest hits","Sade greatest hits","Wizkid Essence","Burna Boy Last Last","Rema Calm Down"]
   }
@@ -1111,16 +1108,13 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    if (currentMusicMode === "spotify") {
-      byId("musicFrame").src = "about:blank";
-    } else {
-      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
-    }
+    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
   if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  stopSpotifyLiveSync();
+  if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
