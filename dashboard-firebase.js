@@ -34,7 +34,6 @@ const config = {
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
-  syncStartAt: 0,
   musicModes: {
     executive: {
       title: "Executive Mode",
@@ -286,20 +285,9 @@ function setSpotifySyncStatus(text) {
   if (el) el.textContent = text;
 }
 
-
-function getSpotifyRequestUrl() {
-  const url = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
-  return url || "https://demarksinvestment-hash.github.io/STYL_Smart_Timing_Cinematic_Click_ROI/request.html";
-}
-
-function makeQrUrl(data, size = 240) {
-  return "https://api.qrserver.com/v1/create-qr-code/?size=" + size + "x" + size + "&data=" + encodeURIComponent(data);
-}
-
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
   const qr = byId("spotifyRiderQr");
-  const fallback = byId("spotifyQrFallback");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
@@ -307,35 +295,9 @@ function updateSpotifyRiderPanel() {
   panel.classList.toggle("hidden", !isSpotify);
   byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
-  const riderUrl = getSpotifyRequestUrl();
+  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
   link.href = riderUrl;
-  link.textContent = "Request Song";
-  link.setAttribute("data-url", riderUrl);
-
-  if (fallback) {
-    fallback.classList.add("hidden");
-    fallback.textContent = "QR not loaded — tap Request Song below.";
-  }
-
-  // Cache-bust because GitHub Pages/tablet browsers sometimes keep a broken QR image.
-  const qrUrl = makeQrUrl(riderUrl, 240) + "&t=" + encodeURIComponent(String(Date.now()));
-  qr.alt = "Scan to request a song";
-  qr.style.display = "block";
-  qr.onerror = () => {
-    qr.onerror = null;
-    qr.style.display = "none";
-    if (fallback) {
-      fallback.classList.remove("hidden");
-      fallback.innerHTML = `QR image blocked. Tap <strong>Request Song</strong>.`;
-    }
-  };
-  qr.onload = () => {
-    qr.style.display = "block";
-    if (fallback) fallback.classList.add("hidden");
-  };
-  qr.src = qrUrl;
-
-  setSpotifySyncStatus(isSpotify ? "Scan QR to request a song." : "Live Playlist Sync: Ready");
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
 }
 
 function refreshSpotifyFrameForLiveSync() {
@@ -837,8 +799,7 @@ function renderMusicPlaylistBrowser() {
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
       setMusicMode(currentStylPlaylistKey);
-      renderMusicPlaylistBrowser();
-  initEndTripOverlay();
+      initEndTripOverlay();
     });
   });
 
@@ -858,8 +819,7 @@ function renderMusicPlaylistBrowser() {
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
     clearMusicPlaylistTimer();
-    renderMusicPlaylistBrowser();
-  });
+    });
 
   byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
     musicPlaylistActive = true;
@@ -915,7 +875,6 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  renderMusicPlaylistBrowser();
 }
 
 async function scheduleMusicPlaylistNext(videoId) {
@@ -1146,16 +1105,12 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    if (currentMusicMode === "spotify") {
-      byId("musicFrame").src = "about:blank";
-    } else {
-      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
-    }
+    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  stopSpotifyLiveSync();
+  if (typeof renderMusicPlaylistBrowser === 'function') if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
@@ -1258,13 +1213,6 @@ async function requestBrowserWeather() {
   }
 }
 
-
-function runAtSyncedStart(callback) {
-  const startAt = Number(config.syncStartAt || 0);
-  const wait = startAt ? Math.max(0, startAt - Date.now()) : 0;
-  setTimeout(callback, wait);
-}
-
 function applyProfile(data = {}) {
   Object.assign(config, data || {});
   refreshMusicModeUrls();
@@ -1293,19 +1241,19 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") runAtSyncedStart(() => showView("news", "Watch News", "newsBtn"));
-      else if (cmd === "sports") runAtSyncedStart(() => showView("sports", "Watch Sports", "sportsBtn"));
-      else if (cmd === "music") runAtSyncedStart(() => showView("music", "Play Music", "musicBtn"));
-      else if (cmd === "youtubepanel") { runAtSyncedStart(() => { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }); }
-      else if (cmd === "youtubequeue") { runAtSyncedStart(() => startRequestQueue(config.requestQueue || [], false)); }
-      else if (cmd === "youtubequeuecontinuous") { runAtSyncedStart(() => updateContinuousRequestQueue(config.requestQueue || [])); }
-      else if (cmd === "youtube") runAtSyncedStart(() => showView("youtube", "YouTube Lounge", "youtubeBtn"));
+      if (cmd === "news") showView("news", "Watch News", "newsBtn");
+      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
+      else if (cmd === "music") showView("music", "Play Music", "musicBtn");
+      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
+      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
+      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
+      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
       else if (cmd === "endtrip") { showEndTripOverlay(); }
       else if (cmd === "previewupsell") { showEndTripOverlay(); }
-      else if (cmd === "home") runAtSyncedStart(() => showView("home", "STYL Home", "homeBtn"));
+      else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
     }
@@ -1398,7 +1346,6 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
-  renderMusicPlaylistBrowser();
   initSwipe();
   requestBrowserWeather();
   updateClock();
