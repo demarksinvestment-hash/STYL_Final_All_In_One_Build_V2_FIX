@@ -34,6 +34,7 @@ const config = {
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
+  syncStartAt: 0,
   musicModes: {
     executive: {
       title: "Executive Mode",
@@ -287,29 +288,28 @@ function setSpotifySyncStatus(text) {
 
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
+  const defaultPanel = byId("stylDefaultPlaylistPanel");
   const qr = byId("spotifyRiderQr");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
   const isSpotify = currentMusicMode === "spotify";
   panel.classList.toggle("hidden", !isSpotify);
-  byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
+  if (defaultPanel) defaultPanel.classList.toggle("hidden", isSpotify);
 
-  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
+  const riderUrl = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
+  if (!riderUrl) {
+    qr.removeAttribute("src");
+    link.removeAttribute("href");
+    link.textContent = "Request Page Missing";
+    setSpotifySyncStatus("Set Spotify Rider Link in admin.");
+    return;
+  }
+
+  qr.src = buildQrUrl(riderUrl);
   link.href = riderUrl;
-  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
-}
-
-function refreshSpotifyFrameForLiveSync() {
-  if (currentMusicMode !== "spotify") return;
-  const frame = byId("musicFrame");
-  if (!frame) return;
-  const mode = config.musicModes?.spotify;
-  const url = mode?.embedUrl || config.spotifyMusicUrl;
-  if (!url) return;
-  frame.src = url;
-  const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  setSpotifySyncStatus("Live Playlist Sync: refreshed at " + time);
+  link.textContent = "Request Song";
+  setSpotifySyncStatus("Live Playlist Sync: Ready");
 }
 
 function startSpotifyLiveSync() {
@@ -799,8 +799,7 @@ function renderMusicPlaylistBrowser() {
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
       setMusicMode(currentStylPlaylistKey);
-      renderMusicPlaylistBrowser();
-  initEndTripOverlay();
+      initEndTripOverlay();
     });
   });
 
@@ -820,8 +819,7 @@ function renderMusicPlaylistBrowser() {
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
     clearMusicPlaylistTimer();
-    renderMusicPlaylistBrowser();
-  });
+    });
 
   byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
     musicPlaylistActive = true;
@@ -877,7 +875,6 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  renderMusicPlaylistBrowser();
 }
 
 async function scheduleMusicPlaylistNext(videoId) {
@@ -1112,13 +1109,36 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  syncDefaultPlaylistButtons();
+  if (typeof renderMusicPlaylistBrowser === 'function') if (currentMusicMode === "spotify") startSpotifyLiveSync();
   else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
   }
+}
+
+
+function syncDefaultPlaylistButtons() {
+  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode);
+  });
+}
+
+function initDefaultPlaylistPanel() {
+  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setMusicMode(btn.dataset.musicMode || "executive");
+      showView("music", "Play Music", "musicBtn");
+      if (typeof broadcastRemoteCommand === "function") broadcastRemoteCommand("music", { mode: currentMusicMode });
+    });
+  });
+}
+
+function runAtSyncedStart(callback) {
+  const startAt = Number(config.syncStartAt || 0);
+  const wait = startAt ? Math.max(0, startAt - Date.now()) : 0;
+  setTimeout(callback, wait);
 }
 
 function updateGreetingHighlight() {
@@ -1245,19 +1265,19 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Watch News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
-      else if (cmd === "music") showView("music", "Play Music", "musicBtn");
-      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
-      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
+      if (cmd === "news") runAtSyncedStart(() => showView("news", "Watch News", "newsBtn"));
+      else if (cmd === "sports") runAtSyncedStart(() => showView("sports", "Watch Sports", "sportsBtn"));
+      else if (cmd === "music") runAtSyncedStart(() => showView("music", "Play Music", "musicBtn"));
+      else if (cmd === "youtubepanel") { runAtSyncedStart(() => { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }); }
+      else if (cmd === "youtubequeue") { runAtSyncedStart(() => startRequestQueue(config.requestQueue || [], false)); }
+      else if (cmd === "youtubequeuecontinuous") { runAtSyncedStart(() => updateContinuousRequestQueue(config.requestQueue || [])); }
+      else if (cmd === "youtube") runAtSyncedStart(() => showView("youtube", "YouTube Lounge", "youtubeBtn"));
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
       else if (cmd === "endtrip") { showEndTripOverlay(); }
       else if (cmd === "previewupsell") { showEndTripOverlay(); }
-      else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
+      else if (cmd === "home") runAtSyncedStart(() => showView("home", "STYL Home", "homeBtn"));
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
     }
@@ -1349,8 +1369,8 @@ window.addEventListener("load", () => {
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
+  initDefaultPlaylistPanel();
   initYouTubeQueueListener();
-  renderMusicPlaylistBrowser();
   initSwipe();
   requestBrowserWeather();
   updateClock();
