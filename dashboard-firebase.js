@@ -784,15 +784,16 @@ function renderMusicPlaylistBrowser() {
 
   box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
     btn.addEventListener("click", () => {
+      // IMPORTANT:
+      // These tabs are for the STYL Dynamic Reshuffling Playlist only.
+      // Do not call setMusicMode() here, because that switches the main submode
+      // and loads the default playlist assigned to Executive/Vibe/R&B/etc.
       currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
-      currentMusicMode = currentStylPlaylistKey;
       musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
       musicPlaylistIndex = 0;
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
-      setMusicMode(currentStylPlaylistKey);
       renderMusicPlaylistBrowser();
-  initEndTripOverlay();
     });
   });
 
