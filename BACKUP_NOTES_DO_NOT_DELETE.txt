@@ -1,0 +1,5 @@
+Stable backup point before Patch 1.
+If anything breaks, restore these files from the commit before Patch 1:
+live.html
+dashboard-firebase.js
+styles.css
