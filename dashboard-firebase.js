@@ -749,6 +749,7 @@ function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
 function renderMusicPlaylistBrowser() {
   const box = byId("musicPlaylistBrowser");
   if (!box) return;
+
   const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
   const list = stylSmartPlaylists[active];
 
@@ -767,7 +768,7 @@ function renderMusicPlaylistBrowser() {
     </div>
     <div class="styl-playlist-tabs">
       ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
-        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
+        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-dynamic-playlist-key="${key}">${playlist.title}</button>
       `).join("")}
     </div>
     <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
@@ -783,22 +784,34 @@ function renderMusicPlaylistBrowser() {
   `;
 
   box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      // IMPORTANT:
-      // These tabs are for the STYL Dynamic Reshuffling Playlist only.
-      // Do not call setMusicMode() here, because that switches the main submode
-      // and loads the default playlist assigned to Executive/Vibe/R&B/etc.
-      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Dynamic playlist tabs ONLY. They must never trigger the main Play Music submodes.
+      const key = btn.dataset.dynamicPlaylistKey || "executive";
+      currentStylPlaylistKey = stylSmartPlaylists[key] ? key : "executive";
       musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
       musicPlaylistIndex = 0;
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
+
+      // Keep main mode locked on Play Your Own Music so no default iframe playlist loads.
+      currentMusicMode = "spotify";
+      document.querySelectorAll(".music-mode-btn").forEach(modeBtn => {
+        modeBtn.classList.toggle("active", modeBtn.dataset.musicMode === "spotify");
+      });
+
       renderMusicPlaylistBrowser();
+      updateSpotifyRiderPanel();
     });
   });
 
   box.querySelectorAll(".styl-playlist-song").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
       const index = Number(btn.dataset.index || 0);
       if (Number.isFinite(index)) {
         musicPlaylistIndex = index;
@@ -808,7 +821,10 @@ function renderMusicPlaylistBrowser() {
     });
   });
 
-  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
@@ -816,11 +832,26 @@ function renderMusicPlaylistBrowser() {
     renderMusicPlaylistBrowser();
   });
 
-  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
+  byId("startMusicPlaylistBtn")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     musicPlaylistActive = true;
     if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     playMusicPlaylistCurrent();
   });
+}
+
+
+function initDynamicPlaylistClickFirewall() {
+  const box = byId("musicPlaylistBrowser");
+  if (!box) return;
+  box.addEventListener("click", (event) => {
+    const dynamicButton = event.target.closest(".styl-playlist-tab, .styl-playlist-song, #reshuffleMusicQueueBtn, #startMusicPlaylistBtn");
+    if (dynamicButton) {
+      event.stopPropagation();
+    }
+  }, true);
 }
 
 function clearMusicPlaylistTimer() {
@@ -1342,6 +1373,7 @@ function initSwipe() {
 window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
+  initDynamicPlaylistClickFirewall();
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
