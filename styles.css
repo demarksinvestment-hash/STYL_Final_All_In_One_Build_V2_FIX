@@ -1453,3 +1453,91 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     grid-template-columns:1fr;
   }
 }
+
+/* PATCH 1B - KEEP DYNAMIC PLAYLIST VISIBLE INSIDE PLAY YOUR OWN MUSIC */
+/* This fixes the playlist being pushed below/outside the tablet frame. */
+
+#musicView .music-panel:has(#musicContentLayout.spotify-visible){
+  display:grid !important;
+  grid-template-columns:minmax(0, 1.45fr) minmax(280px, .9fr) !important;
+  grid-template-rows:auto auto minmax(0, 1fr) !important;
+  gap:12px 14px !important;
+  height:100% !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+
+#musicView .music-panel:has(#musicContentLayout.spotify-visible) .music-title,
+#musicView .music-panel:has(#musicContentLayout.spotify-visible) .music-copy{
+  grid-column:1 / -1 !important;
+}
+
+#musicView #musicContentLayout.spotify-visible{
+  display:contents !important;
+}
+
+#musicView #musicContentLayout.spotify-visible .music-embed-wrap{
+  display:none !important;
+}
+
+#musicView #musicContentLayout.spotify-visible #spotifyRiderPanel{
+  grid-column:2 !important;
+  grid-row:3 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:0 !important;
+  height:100% !important;
+  overflow:auto !important;
+  margin:0 !important;
+}
+
+#musicView .music-panel:has(#musicContentLayout.spotify-visible) #musicPlaylistBrowser,
+#musicView .music-panel:has(#musicContentLayout.spotify-visible) .music-playlist-browser{
+  grid-column:1 !important;
+  grid-row:3 !important;
+  display:block !important;
+  height:100% !important;
+  min-height:0 !important;
+  max-height:100% !important;
+  overflow:auto !important;
+  margin:0 !important;
+  padding:12px !important;
+  box-sizing:border-box !important;
+  border-radius:18px !important;
+  border:1px solid rgba(212,175,55,.35) !important;
+  background:rgba(0,0,0,.45) !important;
+}
+
+#musicView .music-panel:has(#musicContentLayout.spotify-visible) .styl-playlist-list{
+  max-height:260px !important;
+  overflow:auto !important;
+}
+
+#musicView #spotifyRiderQr{
+  width:220px !important;
+  height:220px !important;
+}
+
+@media(max-width:980px){
+  #musicView .music-panel:has(#musicContentLayout.spotify-visible){
+    grid-template-columns:1fr !important;
+    grid-template-rows:auto auto minmax(260px,1fr) auto !important;
+    overflow:auto !important;
+  }
+
+  #musicView .music-panel:has(#musicContentLayout.spotify-visible) #musicPlaylistBrowser{
+    grid-column:1 !important;
+    grid-row:3 !important;
+    height:auto !important;
+    max-height:360px !important;
+  }
+
+  #musicView #musicContentLayout.spotify-visible #spotifyRiderPanel{
+    grid-column:1 !important;
+    grid-row:4 !important;
+    height:auto !important;
+    min-height:260px !important;
+  }
+}
