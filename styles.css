@@ -1567,3 +1567,79 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   background:#d4af37;
   color:#080808;
 }
+
+/* PATCH 1H CLEAN BOXES PLAYBACK RESHUFFLE FIX */
+.styl-playlist-tabs{
+  display:grid !important;
+  grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  gap:10px !important;
+  margin:12px 0 !important;
+}
+.styl-dynamic-tab{
+  min-height:58px !important;
+  border-radius:16px !important;
+  border:1px solid rgba(212,175,55,.38) !important;
+  background:linear-gradient(145deg, rgba(255,255,255,.06), rgba(0,0,0,.34)) !important;
+  color:#f5d98a !important;
+  font-weight:900 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  cursor:pointer !important;
+  user-select:none !important;
+  touch-action:manipulation !important;
+  padding:10px !important;
+  box-shadow:0 10px 22px rgba(0,0,0,.22) !important;
+}
+.styl-dynamic-tab.active{
+  background:linear-gradient(135deg, #d4af37, #f5d98a) !important;
+  color:#080808 !important;
+  border-color:#f5d98a !important;
+}
+.styl-dynamic-tab:active,
+.styl-playlist-song:active,
+#startMusicPlaylistBtn:active,
+#reshuffleMusicQueueBtn:active{
+  transform:scale(.98);
+}
+.styl-playlist-song{
+  width:100% !important;
+  padding:10px !important;
+  border-radius:12px !important;
+  border:1px solid rgba(212,175,55,.25) !important;
+  background:rgba(255,255,255,.04) !important;
+  color:#fff !important;
+  text-align:left !important;
+  cursor:pointer !important;
+  touch-action:manipulation !important;
+  user-select:none !important;
+  box-sizing:border-box !important;
+}
+.styl-playlist-song.active{
+  border-color:#d4af37 !important;
+  background:rgba(212,175,55,.14) !important;
+}
+.styl-playlist-song span{
+  display:block !important;
+  color:#fff !important;
+  font-weight:800 !important;
+  line-height:1.25 !important;
+}
+.styl-playlist-song small{
+  display:block !important;
+  color:#d4af37 !important;
+  margin-top:4px !important;
+}
+.music-start-btn,
+#startMusicPlaylistBtn,
+#reshuffleMusicQueueBtn{
+  cursor:pointer !important;
+  touch-action:manipulation !important;
+}
+#startMusicPlaylistBtn{
+  border:1px solid rgba(212,175,55,.45) !important;
+  background:linear-gradient(135deg,#d4af37,#f5d98a) !important;
+  color:#080808 !important;
+  font-weight:1000 !important;
+}
