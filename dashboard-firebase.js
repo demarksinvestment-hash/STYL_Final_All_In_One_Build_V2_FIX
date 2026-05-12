@@ -8,7 +8,7 @@ const config = {
   guestName: "Guest",
   trip: "Luxury Ride",
   mode: "executive",
-  chauffeurName: "Ayo",a
+  chauffeurName: "Ayo",
   vehicleName: "Chevrolet Suburban",
   welcomeNote: "Your STYL luxury experience is ready.",
   scrollingMessage: "",
@@ -762,12 +762,8 @@ function getDynamicPlaylistTabLabel(key, playlist) {
 function renderMusicPlaylistBrowser() {
   const box = byId("musicPlaylistBrowser");
   if (!box) return;
-
-  const allowedKeys = ["executive", "vibe", "party", "rnb80s", "afrobeats"];
-  if (!allowedKeys.includes(currentStylPlaylistKey)) currentStylPlaylistKey = "executive";
-
-  const active = currentStylPlaylistKey;
-  const list = stylSmartPlaylists[active] || stylSmartPlaylists.executive;
+  const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
+  const list = stylSmartPlaylists[active];
 
   if (!musicPlaylistQueue.length || !musicPlaylistQueue[0]?.query) {
     musicPlaylistQueue = buildStylPlaylistQueue(active);
@@ -778,95 +774,92 @@ function renderMusicPlaylistBrowser() {
     <div class="music-browser-head">
       <div>
         <div class="queue-title">STYL ${list.title} Playlist</div>
-        <div class="queue-copy">Dynamic queue • reshuffles every session • tap a song or start continuous play</div>
+        <div class="queue-copy">Dynamic queue • reshuffles every session • continuous autoplay</div>
       </div>
       <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
     </div>
-
     <div class="styl-playlist-tabs">
-      ${allowedKeys.map((key) => {
-        const playlist = stylSmartPlaylists[key];
-        return `<div class="styl-dynamic-tab ${key === active ? "active" : ""}" data-dynamic-playlist-key="${key}" role="button" tabindex="0">${getDynamicPlaylistTabLabel(key, playlist)}</div>`;
-      }).join("")}
-    </div>
-
-    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap a song or press Start Continuous STYL Playlist."}</div>
-
-    <div class="styl-playlist-list">
-      ${musicPlaylistQueue.map((item, index) => `
-        <div class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}" role="button" tabindex="0">
-          <span>${index + 1}. ${item.label}</span>
-          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
-        </div>
+      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+        <div class="styl-dynamic-tab ${key === active ? "active" : ""}" data-dynamic-playlist-key="${key}" role="button" tabindex="0">${getDynamicPlaylistTabLabel(key, playlist)}</div>
       `).join("")}
     </div>
-
+    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
+    <div class="styl-playlist-list">
+      ${musicPlaylistQueue.map((item, index) => `
+        <button type="button" class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}">
+          <span>${index + 1}. ${item.label}</span>
+          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
+        </button>
+      `).join("")}
+    </div>
     <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
   `;
 
-  const switchDynamicMix = (key) => {
-    currentStylPlaylistKey = allowedKeys.includes(key) ? key : "executive";
-    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-    musicPlaylistIndex = 0;
-    musicPlaylistActive = false;
-    clearMusicPlaylistTimer();
-    currentMusicMode = "spotify";
-    renderMusicPlaylistBrowser();
-    updateSpotifyRiderPanel();
-  };
-
-  box.querySelectorAll(".styl-dynamic-tab").forEach(tab => {
-    const run = (event) => {
+  box.querySelectorAll(".styl-dynamic-tab").forEach(btn => {
+    const switchDynamicMix = (event) => {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      switchDynamicMix(tab.dataset.dynamicPlaylistKey || "executive");
+
+      const key = btn.dataset.dynamicPlaylistKey || "executive";
+      currentStylPlaylistKey = stylSmartPlaylists[key] ? key : "executive";
+      musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+      musicPlaylistIndex = 0;
+      musicPlaylistActive = false;
+      clearMusicPlaylistTimer();
+
+      currentMusicMode = "spotify";
+      document.querySelectorAll(".music-mode-btn").forEach(modeBtn => {
+        modeBtn.classList.toggle("active", modeBtn.dataset.musicMode === "spotify");
+      });
+
+      renderMusicPlaylistBrowser();
+      updateSpotifyRiderPanel();
     };
-    tab.addEventListener("click", run, true);
-    tab.addEventListener("touchend", run, true);
-    tab.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") run(event);
+
+    btn.addEventListener("click", switchDynamicMix, true);
+    btn.addEventListener("touchend", switchDynamicMix, true);
+    btn.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") switchDynamicMix(event);
     }, true);
   });
 
-  box.querySelectorAll(".styl-playlist-song").forEach(songBtn => {
-    const run = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      const index = Number(songBtn.dataset.index || 0);
-      if (Number.isFinite(index) && musicPlaylistQueue[index]) {
+  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index)) {
         musicPlaylistIndex = index;
         musicPlaylistActive = true;
         playMusicPlaylistCurrent();
       }
-    };
-    songBtn.addEventListener("click", run, true);
-    songBtn.addEventListener("touchend", run, true);
-    songBtn.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") run(event);
-    }, true);
+    });
   });
 
-  byId("reshuffleMusicQueueBtn")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
     musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
     clearMusicPlaylistTimer();
     renderMusicPlaylistBrowser();
-  }, true);
+  });
 
-  byId("startMusicPlaylistBtn")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-    musicPlaylistIndex = 0;
+  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
     musicPlaylistActive = true;
+    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     playMusicPlaylistCurrent();
+  });
+}
+
+
+function initDynamicPlaylistClickFirewall() {
+  const box = byId("musicPlaylistBrowser");
+  if (!box) return;
+  box.addEventListener("click", (event) => {
+    const dynamicControl = event.target.closest(".styl-dynamic-tab, .styl-playlist-song, #reshuffleMusicQueueBtn, #startMusicPlaylistBtn");
+    if (dynamicControl) {
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    }
   }, true);
 }
 
@@ -900,27 +893,31 @@ async function playMusicPlaylistCurrent() {
   }
 
   const item = musicPlaylistQueue[musicPlaylistIndex];
-  if (!item) return;
+  const frame = byId("musicFrame");
+  if (!frame || !item) return;
 
+  showView("music", "Play Music", "musicBtn");
   musicPlaylistActive = true;
   clearMusicPlaylistTimer();
 
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  setYouTubePanelStatus(`Playing STYL mix ${musicPlaylistIndex + 1} of ${musicPlaylistQueue.length}: ${item.label || item.query}`);
-  await searchYouTubePanel(item.query || item.label || "", true);
-
-  musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
+  const videoId = await searchFirstYouTubeVideoId(item.query);
+  if (videoId) {
+    frame.src = "about:blank";
+    setTimeout(() => { frame.src = buildYouTubeVideoUrl(videoId); }, 100);
+    scheduleMusicPlaylistNext(videoId);
+  } else {
+    frame.src = buildYouTubeFallbackUrl(item.query);
+    musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
+  }
 
   renderMusicPlaylistBrowser();
 }
 
 async function scheduleMusicPlaylistNext(videoId) {
   clearMusicPlaylistTimer();
-  let seconds = requestQueueFallbackSeconds;
-  if (videoId && typeof getYouTubeVideoDurationSeconds === "function") {
-    const duration = await getYouTubeVideoDurationSeconds(videoId);
-    if (duration) seconds = Math.max(75, Math.min(720, duration + 8));
-  }
+  let seconds = await getYouTubeVideoDurationSeconds(videoId);
+  if (!seconds) seconds = requestQueueFallbackSeconds;
+  seconds = Math.max(75, Math.min(720, seconds + 8));
   musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, seconds * 1000);
 }
 
