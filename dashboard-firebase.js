@@ -835,9 +835,7 @@ function renderMusicPlaylistBrowser() {
     });
   });
 
-  byId("reshuffleMusicQueueBtn")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
     if (currentStylPlaylistKey === "spotify") currentStylPlaylistKey = "executive";
     musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
@@ -846,9 +844,7 @@ function renderMusicPlaylistBrowser() {
     renderMusicPlaylistBrowser();
   });
 
-  byId("startMusicPlaylistBtn")?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
     if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
     musicPlaylistActive = true;
@@ -858,15 +854,10 @@ function renderMusicPlaylistBrowser() {
 
 
 function initDynamicPlaylistClickFirewall() {
-  const box = byId("musicPlaylistBrowser");
-  if (!box) return;
-  box.addEventListener("click", (event) => {
-    const dynamicControl = event.target.closest(".styl-dynamic-tab, .styl-playlist-song, #reshuffleMusicQueueBtn, #startMusicPlaylistBtn");
-    if (dynamicControl) {
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-    }
-  }, true);
+  // Patch 1J:
+  // The previous capture-level firewall stopped clicks before song/start handlers could run.
+  // Dynamic tab handlers already stop propagation themselves, so this is intentionally no-op.
+  return;
 }
 
 function clearMusicPlaylistTimer() {
@@ -904,16 +895,16 @@ async function playMusicPlaylistCurrent() {
   musicPlaylistActive = true;
   clearMusicPlaylistTimer();
 
-  // Keep dynamic mix controls under Play Your Own Music,
-  // but use YouTube Lounge for reliable actual playback.
+  // Play dynamic STYL mix songs in YouTube Lounge so the video/audio is visible.
   showView("youtube", "YouTube Lounge", "youtubeBtn");
+
   if (typeof setYouTubePanelStatus === "function") {
     setYouTubePanelStatus(`Playing STYL mix ${musicPlaylistIndex + 1} of ${musicPlaylistQueue.length}: ${item.label || item.query}`);
   }
 
   await searchYouTubePanel(item.query || item.label || "", true);
 
-  // Safe continuous fallback so Start Continuous STYL Playlist keeps moving.
+  // Keep continuous STYL playlist moving with the existing safe fallback timer.
   musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
 
   renderMusicPlaylistBrowser();
