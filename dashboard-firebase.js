@@ -17,7 +17,7 @@ const config = {
   partyMusicUrl: "https://www.youtube.com/embed/videoseries?list=PLFgquLnL59amEA53azfP6qWD5F3eVQfmx&enablejsapi=1&rel=0",
   rnb80sMusicUrl: "https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0",
   afrobeatsMusicUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
-  spotifyMusicUrl: "",
+  spotifyMusicUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
   spotifyRiderUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
@@ -34,6 +34,7 @@ const config = {
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
+  syncStartAt: 0,
   musicModes: {
     executive: {
       title: "Executive Mode",
@@ -61,9 +62,9 @@ const config = {
       embedUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0"
     },
     spotify: {
-      title: "Play Your Own Music",
-      description: "Scan the QR code to request your favorite song.",
-      embedUrl: ""
+      title: "Spotify",
+      description: "Let riders choose their own music on Spotify.",
+      embedUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator"
     }
   },
   weatherFallback: { temp: "--", icon: "☀️", text: "Weather unavailable" }
@@ -167,7 +168,7 @@ function refreshMusicModeUrls() {
   if (config.musicModes.party) config.musicModes.party.embedUrl = config.partyMusicUrl;
   if (config.musicModes.rnb80s) config.musicModes.rnb80s.embedUrl = config.rnb80sMusicUrl;
   if (config.musicModes.afrobeats) config.musicModes.afrobeats.embedUrl = config.afrobeatsMusicUrl;
-  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = "";
+  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = config.spotifyMusicUrl;
 }
 
 function isSpotifyUrl(url) {
@@ -287,29 +288,36 @@ function setSpotifySyncStatus(text) {
 
 function updateSpotifyRiderPanel() {
   const panel = byId("spotifyRiderPanel");
+  const defaultPanel = byId("stylDefaultPlaylistPanel");
   const qr = byId("spotifyRiderQr");
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
-  const isPlayYourOwnMusic = currentMusicMode === "spotify";
-  panel.classList.toggle("hidden", !isPlayYourOwnMusic);
-  byId("musicContentLayout")?.classList.toggle("spotify-visible", isPlayYourOwnMusic);
+  const isSpotify = currentMusicMode === "spotify";
+  panel.classList.toggle("hidden", !isSpotify);
+  if (defaultPanel) defaultPanel.classList.toggle("hidden", isSpotify);
 
-  const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
+  const riderUrl = String(config.spotifyRiderUrl || config.musicRequestUrl || "").trim();
+  if (!riderUrl) {
+    qr.removeAttribute("src");
+    link.removeAttribute("href");
+    link.textContent = "Request Page Missing";
+    setSpotifySyncStatus("Set Spotify Rider Link in admin.");
+    return;
+  }
+
+  qr.src = buildQrUrl(riderUrl);
   link.href = riderUrl;
-  link.textContent = "Request Your Music";
-  qr.alt = "Scan to request your music";
-  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
-
-  setSpotifySyncStatus(isPlayYourOwnMusic ? "Request QR Ready" : "Live Playlist Sync: Ready");
-}
-
-function refreshSpotifyFrameForLiveSync() {
-  return;
+  link.textContent = "Request Song";
+  setSpotifySyncStatus("Live Playlist Sync: Ready");
 }
 
 function startSpotifyLiveSync() {
-  return;
+  stopSpotifyLiveSync();
+  if (!config.spotifySyncEnabled || currentMusicMode !== "spotify") return;
+  const interval = Math.max(15, Number(config.spotifySyncIntervalSeconds || 25)) * 1000;
+  setSpotifySyncStatus("Live Playlist Sync: active");
+  spotifySyncTimer = setInterval(refreshSpotifyFrameForLiveSync, interval);
 }
 
 function stopSpotifyLiveSync() {
@@ -726,7 +734,7 @@ const stylSmartPlaylists = {
     pool: ["Rema Calm Down","Burna Boy Last Last","Wizkid Essence","Davido Unavailable","Asake Lonely At The Top","Ayra Starr Rush","CKay Love Nwantiti","Kizz Daniel Buga","Tyla Water","Fireboy DML Peru","Omah Lay Soso","Tekno Pana","P-Square Personally","Flavour Nwa Baby","Tiwa Savage Somebody's Son"]
   },
   spotify: {
-    title: "Play Your Own Music",
+    title: "Spotify Requests",
     description: "Rider request inspiration and popular ride selections.",
     pool: ["Afrobeats latest hits","Smooth jazz lounge music","R&B 80s classics","Top clean party songs","Luxury lounge music","Kenny G greatest hits","Sade greatest hits","Wizkid Essence","Burna Boy Last Last","Rema Calm Down"]
   }
@@ -744,19 +752,6 @@ function shuffleSongs(pool = [], limit = 10) {
 function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
   const list = stylSmartPlaylists[key] || stylSmartPlaylists.executive;
   return shuffleSongs(list.pool, 10).map(song => ({ query: song, label: song }));
-}
-
-
-function getDynamicPlaylistTabLabel(key, playlist) {
-  const dynamicLabels = {
-    executive: "STYL Executive Mix",
-    vibe: "STYL Vibe Mix",
-    party: "STYL Party Mix",
-    rnb80s: "STYL R&B 80s Mix",
-    afrobeats: "STYL Afrobeats Mix",
-    spotify: "STYL Rider Mix"
-  };
-  return dynamicLabels[key] || playlist?.title || key;
 }
 
 function renderMusicPlaylistBrowser() {
@@ -779,8 +774,8 @@ function renderMusicPlaylistBrowser() {
       <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
     </div>
     <div class="styl-playlist-tabs">
-      ${Object.entries(stylSmartPlaylists).filter(([key]) => key !== "spotify").map(([key, playlist]) => `
-        <div class="styl-dynamic-tab ${key === active ? "active" : ""}" data-dynamic-playlist-key="${key}" role="button" tabindex="0">${getDynamicPlaylistTabLabel(key, playlist)}</div>
+      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
       `).join("")}
     </div>
     <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
@@ -795,33 +790,17 @@ function renderMusicPlaylistBrowser() {
     <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
   `;
 
-  box.querySelectorAll(".styl-dynamic-tab").forEach(btn => {
-    const switchDynamicMix = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-
-      const key = btn.dataset.dynamicPlaylistKey || "executive";
-      currentStylPlaylistKey = stylSmartPlaylists[key] ? key : "executive";
+  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
+      currentMusicMode = currentStylPlaylistKey;
       musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
       musicPlaylistIndex = 0;
       musicPlaylistActive = false;
       clearMusicPlaylistTimer();
-
-      currentMusicMode = "spotify";
-      document.querySelectorAll(".music-mode-btn").forEach(modeBtn => {
-        modeBtn.classList.toggle("active", modeBtn.dataset.musicMode === "spotify");
-      });
-
-      renderMusicPlaylistBrowser();
-      updateSpotifyRiderPanel();
-    };
-
-    btn.addEventListener("click", switchDynamicMix, true);
-    btn.addEventListener("touchend", switchDynamicMix, true);
-    btn.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") switchDynamicMix(event);
-    }, true);
+      setMusicMode(currentStylPlaylistKey);
+      initEndTripOverlay();
+    });
   });
 
   box.querySelectorAll(".styl-playlist-song").forEach(btn => {
@@ -836,28 +815,17 @@ function renderMusicPlaylistBrowser() {
   });
 
   byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
-    if (currentStylPlaylistKey === "spotify") currentStylPlaylistKey = "executive";
     musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
     clearMusicPlaylistTimer();
-    renderMusicPlaylistBrowser();
-  });
+    });
 
   byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
-    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-    musicPlaylistIndex = 0;
     musicPlaylistActive = true;
+    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     playMusicPlaylistCurrent();
   });
-}
-
-
-function initDynamicPlaylistClickFirewall() {
-  // Patch 1J:
-  // The previous capture-level firewall stopped clicks before song/start handlers could run.
-  // Dynamic tab handlers already stop propagation themselves, so this is intentionally no-op.
-  return;
 }
 
 function clearMusicPlaylistTimer() {
@@ -890,24 +858,23 @@ async function playMusicPlaylistCurrent() {
   }
 
   const item = musicPlaylistQueue[musicPlaylistIndex];
-  if (!item) return;
+  const frame = byId("musicFrame");
+  if (!frame || !item) return;
 
+  showView("music", "Play Music", "musicBtn");
   musicPlaylistActive = true;
   clearMusicPlaylistTimer();
 
-  // Play dynamic STYL mix songs in YouTube Lounge so the video/audio is visible.
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-
-  if (typeof setYouTubePanelStatus === "function") {
-    setYouTubePanelStatus(`Playing STYL mix ${musicPlaylistIndex + 1} of ${musicPlaylistQueue.length}: ${item.label || item.query}`);
+  const videoId = await searchFirstYouTubeVideoId(item.query);
+  if (videoId) {
+    frame.src = "about:blank";
+    setTimeout(() => { frame.src = buildYouTubeVideoUrl(videoId); }, 100);
+    scheduleMusicPlaylistNext(videoId);
+  } else {
+    frame.src = buildYouTubeFallbackUrl(item.query);
+    musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  await searchYouTubePanel(item.query || item.label || "", true);
-
-  // Keep continuous STYL playlist moving with the existing safe fallback timer.
-  musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
-
-  renderMusicPlaylistBrowser();
 }
 
 async function scheduleMusicPlaylistNext(videoId) {
@@ -1138,20 +1105,40 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    if (currentMusicMode === "spotify") {
-      byId("musicFrame").src = "about:blank";
-    } else {
-      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
-    }
+    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  stopSpotifyLiveSync();
+  syncDefaultPlaylistButtons();
+  if (typeof renderMusicPlaylistBrowser === 'function') if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
   }
+}
+
+
+function syncDefaultPlaylistButtons() {
+  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode);
+  });
+}
+
+function initDefaultPlaylistPanel() {
+  document.querySelectorAll(".default-playlist-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setMusicMode(btn.dataset.musicMode || "executive");
+      showView("music", "Play Music", "musicBtn");
+      if (typeof broadcastRemoteCommand === "function") broadcastRemoteCommand("music", { mode: currentMusicMode });
+    });
+  });
+}
+
+function runAtSyncedStart(callback) {
+  const startAt = Number(config.syncStartAt || 0);
+  const wait = startAt ? Math.max(0, startAt - Date.now()) : 0;
+  setTimeout(callback, wait);
 }
 
 function updateGreetingHighlight() {
@@ -1278,19 +1265,19 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Watch News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
-      else if (cmd === "music") showView("music", "Play Music", "musicBtn");
-      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
-      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
+      if (cmd === "news") runAtSyncedStart(() => showView("news", "Watch News", "newsBtn"));
+      else if (cmd === "sports") runAtSyncedStart(() => showView("sports", "Watch Sports", "sportsBtn"));
+      else if (cmd === "music") runAtSyncedStart(() => showView("music", "Play Music", "musicBtn"));
+      else if (cmd === "youtubepanel") { runAtSyncedStart(() => { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }); }
+      else if (cmd === "youtubequeue") { runAtSyncedStart(() => startRequestQueue(config.requestQueue || [], false)); }
+      else if (cmd === "youtubequeuecontinuous") { runAtSyncedStart(() => updateContinuousRequestQueue(config.requestQueue || [])); }
+      else if (cmd === "youtube") runAtSyncedStart(() => showView("youtube", "YouTube Lounge", "youtubeBtn"));
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
       else if (cmd === "endtrip") { showEndTripOverlay(); }
       else if (cmd === "previewupsell") { showEndTripOverlay(); }
-      else if (cmd === "home") showView("home", "STYL Home", "homeBtn");
+      else if (cmd === "home") runAtSyncedStart(() => showView("home", "STYL Home", "homeBtn"));
     } finally {
       setTimeout(() => { suppressBroadcast = false; }, 350);
     }
@@ -1379,12 +1366,11 @@ function initSwipe() {
 window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
-  initDynamicPlaylistClickFirewall();
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
+  initDefaultPlaylistPanel();
   initYouTubeQueueListener();
-  renderMusicPlaylistBrowser();
   initSwipe();
   requestBrowserWeather();
   updateClock();
