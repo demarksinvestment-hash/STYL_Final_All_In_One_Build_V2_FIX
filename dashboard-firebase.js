@@ -779,7 +779,7 @@ function renderMusicPlaylistBrowser() {
       <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
     </div>
     <div class="styl-playlist-tabs">
-      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+      ${Object.entries(stylSmartPlaylists).filter(([key]) => key !== "spotify").map(([key, playlist]) => `
         <div class="styl-dynamic-tab ${key === active ? "active" : ""}" data-dynamic-playlist-key="${key}" role="button" tabindex="0">${getDynamicPlaylistTabLabel(key, playlist)}</div>
       `).join("")}
     </div>
@@ -835,7 +835,10 @@ function renderMusicPlaylistBrowser() {
     });
   });
 
-  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (currentStylPlaylistKey === "spotify") currentStylPlaylistKey = "executive";
     musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
     musicPlaylistIndex = 0;
     musicPlaylistActive = false;
@@ -843,9 +846,12 @@ function renderMusicPlaylistBrowser() {
     renderMusicPlaylistBrowser();
   });
 
-  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
-    musicPlaylistActive = true;
+  byId("startMusicPlaylistBtn")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+    musicPlaylistActive = true;
     playMusicPlaylistCurrent();
   });
 }
@@ -893,22 +899,22 @@ async function playMusicPlaylistCurrent() {
   }
 
   const item = musicPlaylistQueue[musicPlaylistIndex];
-  const frame = byId("musicFrame");
-  if (!frame || !item) return;
+  if (!item) return;
 
-  showView("music", "Play Music", "musicBtn");
   musicPlaylistActive = true;
   clearMusicPlaylistTimer();
 
-  const videoId = await searchFirstYouTubeVideoId(item.query);
-  if (videoId) {
-    frame.src = "about:blank";
-    setTimeout(() => { frame.src = buildYouTubeVideoUrl(videoId); }, 100);
-    scheduleMusicPlaylistNext(videoId);
-  } else {
-    frame.src = buildYouTubeFallbackUrl(item.query);
-    musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
+  // Keep dynamic mix controls under Play Your Own Music,
+  // but use YouTube Lounge for reliable actual playback.
+  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  if (typeof setYouTubePanelStatus === "function") {
+    setYouTubePanelStatus(`Playing STYL mix ${musicPlaylistIndex + 1} of ${musicPlaylistQueue.length}: ${item.label || item.query}`);
   }
+
+  await searchYouTubePanel(item.query || item.label || "", true);
+
+  // Safe continuous fallback so Start Continuous STYL Playlist keeps moving.
+  musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
 
   renderMusicPlaylistBrowser();
 }
