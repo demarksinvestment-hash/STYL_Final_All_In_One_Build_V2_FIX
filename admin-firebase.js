@@ -146,7 +146,8 @@ function renderRequests(data = {}) {
   const items = Object.entries(data || {})
     .map(([id, item]) => ({ id, ...(item || {}) }))
     .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")))
-    .slice(0, 25);
+    .slice(-50);
+
   currentRequestItems = items;
 
   if (!items.length) {
@@ -203,7 +204,7 @@ async function sendContinuousQueueUpdate(statusText = "Queue updated") {
     requestQueue: queue,
     requestQueueContinuous: true,
     remoteNonce: Date.now()
-  }, queue.length ? `${statusText}: ${queue.length} requests` : "Continuous queue waiting for requests");
+  }, queue.length ? `${statusText}: ${queue.length} request${queue.length !== 1 ? "s" : ""}` : "Continuous queue waiting for requests");
 }
 
 function listenForRequests() {
