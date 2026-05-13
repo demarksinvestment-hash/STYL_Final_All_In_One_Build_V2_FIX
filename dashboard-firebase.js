@@ -885,6 +885,35 @@ function renderRequestQueuePanel() {
   });
 }
 
+
+function startContinuousQueuePlaybackSoon(reason = "admin-click") {
+  clearRequestQueueTimer();
+  requestQueueActive = true;
+  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  renderRequestQueuePanel();
+  setYouTubePanelStatus("Starting continuous request queue...");
+
+  // Let the YouTube tab/frame become visible before loading the first video.
+  setTimeout(() => {
+    if (requestQueueContinuous && requestQueue.length) {
+      requestQueueActive = true;
+      if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
+      playCurrentQueueItem();
+    }
+  }, 350);
+
+  // Backup start in case the first iframe load gets swallowed by the tablet browser.
+  setTimeout(() => {
+    if (requestQueueContinuous && requestQueue.length && requestQueueActive) {
+      const frame = getYouTubePanelFrame();
+      const src = String(frame?.src || "");
+      if (!src || src === "about:blank" || src.includes("about:blank")) {
+        playCurrentQueueItem();
+      }
+    }
+  }, 1400);
+}
+
 function updateContinuousRequestQueue(queue = []) {
   const nextQueue = normalizeRequestQueue(queue);
   const currentKey = requestQueue[requestQueueIndex] ? getRequestQueueItemKey(requestQueue[requestQueueIndex]) : "";
@@ -936,7 +965,7 @@ function startRequestQueue(queue = [], continuous = false) {
 
   showView("youtube", "YouTube Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Starting request queue 1 of ${requestQueue.length}`);
-  playCurrentQueueItem();
+  setTimeout(playCurrentQueueItem, 350);
 }
 
 async function resolveQueueVideoId(item = {}) {
@@ -1229,7 +1258,15 @@ function applyProfile(data = {}) {
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
+      else if (cmd === "youtubequeuecontinuous") {
+        updateContinuousRequestQueue(config.requestQueue || []);
+        setTimeout(() => {
+          if (requestQueueContinuous && requestQueue.length && !requestQueueActive) {
+            requestQueueIndex = requestQueueIndex >= requestQueue.length ? 0 : requestQueueIndex;
+            startContinuousQueuePlaybackSoon("remote-command-retry");
+          }
+        }, 600);
+      }
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
