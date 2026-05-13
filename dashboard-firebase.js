@@ -854,7 +854,7 @@ function renderRequestQueuePanel() {
 
   box.innerHTML = `
     <div class="queue-title">STYL Request Queue</div>
-    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous play ON" : "Queue loaded"}</div>
+    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous live queue ON" : "Queue loaded"}</div>
     ${requestQueue.map((item, index) => `
       <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
         <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
@@ -877,36 +877,56 @@ function renderRequestQueuePanel() {
   });
 }
 
+function findQueueIndexByKey(queue = [], key = "") {
+  return normalizeRequestQueue(queue).findIndex(item => {
+    const itemKey = `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`;
+    return itemKey === key;
+  });
+}
+
+function getQueueItemKey(item = {}) {
+  return `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`;
+}
+
 function updateContinuousRequestQueue(queue = []) {
   const nextQueue = normalizeRequestQueue(queue);
   const nextSignature = queueSignature(nextQueue);
+
+  requestQueueContinuous = true;
 
   if (!nextQueue.length) {
     requestQueue = [];
     requestQueueIndex = 0;
     requestQueueActive = false;
-    requestQueueContinuous = true;
     requestQueueSignature = "";
     renderRequestQueuePanel();
     setYouTubePanelStatus("Continuous queue is on. Waiting for rider requests.");
     return;
   }
 
-  if (!requestQueueActive || !requestQueue.length) {
-    startRequestQueue(nextQueue, true);
+  const currentKey = requestQueue[requestQueueIndex] ? getQueueItemKey(requestQueue[requestQueueIndex]) : "";
+  requestQueue = nextQueue;
+  requestQueueSignature = nextSignature;
+
+  // Preserve the current playing song if it still exists in the updated queue.
+  const preservedIndex = currentKey ? findQueueIndexByKey(requestQueue, currentKey) : -1;
+  if (preservedIndex >= 0) requestQueueIndex = preservedIndex;
+  if (requestQueueIndex >= requestQueue.length) requestQueueIndex = Math.max(0, requestQueue.length - 1);
+
+  renderRequestQueuePanel();
+
+  // If the queue is already active, do not restart current song; just append/update the side panel.
+  if (requestQueueActive) {
+    setYouTubePanelStatus(`Queue updated live: ${requestQueue.length} request${requestQueue.length !== 1 ? "s" : ""}`);
     return;
   }
 
-  if (nextSignature !== requestQueueSignature) {
-    requestQueue = nextQueue;
-    requestQueueSignature = nextSignature;
-    requestQueueContinuous = true;
-    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
-  }
+  // If queue was waiting/finished, start at the first unplayed/current position.
+  requestQueueActive = true;
+  if (!Number.isFinite(requestQueueIndex) || requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
+  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  playCurrentQueueItem();
 }
-
 
 function startRequestQueue(queue = [], continuous = false) {
   requestQueue = normalizeRequestQueue(queue);
@@ -921,28 +941,59 @@ function startRequestQueue(queue = [], continuous = false) {
     return;
   }
 
-  pauseMusicPlaylistForRequests();
   showView("youtube", "YouTube Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
   playCurrentQueueItem();
 }
 
 function playCurrentQueueItem() {
-  if (!requestQueueActive || !requestQueue.length) return;
+  if (!requestQueue.length) {
+    requestQueueActive = false;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for rider requests." : "Queue is empty.");
+    return;
+  }
+
+  if (requestQueueIndex >= requestQueue.length) {
+    if (requestQueueContinuous) {
+      requestQueueActive = false;
+      requestQueueIndex = requestQueue.length;
+      renderRequestQueuePanel();
+      setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
+      return;
+    }
+    requestQueueIndex = 0;
+  }
+
+  requestQueueActive = true;
   clearRequestQueueTimer();
+
   const item = requestQueue[requestQueueIndex] || {};
+  showView("youtube", "YouTube Lounge", "youtubeBtn");
+
   if (item.videoId) {
     playYouTubePanelVideo(item.videoId);
+    startRequestQueueTimer(requestQueueFallbackSeconds);
   } else {
     searchYouTubePanel(item.query || item.label || "", true);
+    // searchYouTubePanel may start its own timer, but this guarantees auto-next.
+    startRequestQueueTimer(requestQueueFallbackSeconds);
   }
+
   setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
   renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
-  if (!requestQueueActive) return;
   clearRequestQueueTimer();
+
+  if (!requestQueue.length) {
+    requestQueueActive = false;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for rider requests." : "Request queue finished.");
+    return;
+  }
+
   requestQueueIndex += 1;
 
   if (requestQueueIndex >= requestQueue.length) {
@@ -951,15 +1002,16 @@ function playNextQueueItem() {
       requestQueueIndex = requestQueue.length;
       renderRequestQueuePanel();
       setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
-      resumeMusicPlaylistAfterRequests();
       return;
     }
     requestQueueActive = false;
+    requestQueueIndex = 0;
+    renderRequestQueuePanel();
     setYouTubePanelStatus("Request queue finished.");
-    resumeMusicPlaylistAfterRequests();
     return;
   }
 
+  requestQueueActive = true;
   setYouTubePanelStatus(`Next request: ${requestQueueIndex + 1} of ${requestQueue.length}`);
   playCurrentQueueItem();
 }
@@ -1000,7 +1052,7 @@ function clearRequestQueueTimer() {
 function startRequestQueueTimer(seconds = requestQueueFallbackSeconds) {
   clearRequestQueueTimer();
   if (!requestQueueActive) return;
-  const safeSeconds = Math.max(30, Number(seconds || requestQueueFallbackSeconds));
+  const safeSeconds = Math.max(60, Number(seconds || requestQueueFallbackSeconds));
   requestQueueTimer = setTimeout(() => {
     if (requestQueueActive) playNextQueueItem();
   }, safeSeconds * 1000);
