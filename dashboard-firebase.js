@@ -747,79 +747,7 @@ function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
 }
 
 function renderMusicPlaylistBrowser() {
-  const box = byId("musicPlaylistBrowser");
-  if (!box) return;
-  const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
-  const list = stylSmartPlaylists[active];
-
-  if (!musicPlaylistQueue.length || !musicPlaylistQueue[0]?.query) {
-    musicPlaylistQueue = buildStylPlaylistQueue(active);
-    musicPlaylistIndex = 0;
-  }
-
-  box.innerHTML = `
-    <div class="music-browser-head">
-      <div>
-        <div class="queue-title">STYL ${list.title} Playlist</div>
-        <div class="queue-copy">Dynamic queue • reshuffles every session • continuous autoplay</div>
-      </div>
-      <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
-    </div>
-    <div class="styl-playlist-tabs">
-      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
-        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
-      `).join("")}
-    </div>
-    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
-    <div class="styl-playlist-list">
-      ${musicPlaylistQueue.map((item, index) => `
-        <button type="button" class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}">
-          <span>${index + 1}. ${item.label}</span>
-          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
-        </button>
-      `).join("")}
-    </div>
-    <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
-  `;
-
-  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
-      currentMusicMode = currentStylPlaylistKey;
-      musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-      musicPlaylistIndex = 0;
-      musicPlaylistActive = false;
-      clearMusicPlaylistTimer();
-      setMusicMode(currentStylPlaylistKey);
-      renderMusicPlaylistBrowser();
-  initEndTripOverlay();
-    });
-  });
-
-  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const index = Number(btn.dataset.index || 0);
-      if (Number.isFinite(index)) {
-        musicPlaylistIndex = index;
-        musicPlaylistActive = true;
-        playMusicPlaylistCurrent();
-      }
-    });
-  });
-
-  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
-    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-    musicPlaylistIndex = 0;
-    musicPlaylistActive = false;
-    clearMusicPlaylistTimer();
-    renderMusicPlaylistBrowser();
-  });
-
-  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
-    musicPlaylistActive = true;
-    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
-    playMusicPlaylistCurrent();
-  });
+  return;
 }
 
 function clearMusicPlaylistTimer() {
@@ -869,8 +797,7 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  renderMusicPlaylistBrowser();
-}
+  }
 
 async function scheduleMusicPlaylistNext(videoId) {
   clearMusicPlaylistTimer();
@@ -1108,8 +1035,7 @@ function setMusicMode(key) {
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
-  stopSpotifyLiveSync();
+  if (typeof renderMusicPlaylistBrowser === 'function')   stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
@@ -1345,8 +1271,7 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
-  renderMusicPlaylistBrowser();
-  initSwipe();
+    initSwipe();
   requestBrowserWeather();
   updateClock();
   setInterval(updateClock, 30000);
