@@ -1453,3 +1453,71 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     grid-template-columns:1fr;
   }
 }
+
+/* PATCH CLEAN PLAY YOUR OWN MUSIC ONLY */
+/* Dynamic Reshuffling Playlists completely removed from rider dashboard */
+
+#musicPlaylistBrowser,
+.music-playlist-browser,
+.styl-playlist-tabs,
+.styl-dynamic-tab,
+.styl-playlist-list,
+.styl-playlist-song,
+.music-now-playing,
+.music-start-btn,
+#startMusicPlaylistBtn,
+#reshuffleMusicQueueBtn{
+  display:none !important;
+}
+
+/* Play Your Own Music is QR/request only */
+#musicContentLayout.spotify-visible{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(280px,420px) !important;
+  gap:14px !important;
+  align-items:stretch !important;
+}
+
+#musicContentLayout.spotify-visible .music-embed-wrap{
+  min-height:420px !important;
+  background:#050505 !important;
+}
+
+#musicContentLayout.spotify-visible iframe#musicFrame{
+  background:#050505 !important;
+}
+
+#musicContentLayout.spotify-visible #spotifyRiderPanel{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border:1px solid rgba(212,175,55,.35) !important;
+  border-radius:18px !important;
+  background:rgba(0,0,0,.55) !important;
+  padding:16px !important;
+  box-sizing:border-box !important;
+  min-height:420px !important;
+}
+
+#spotifyRiderPanel.hidden{
+  display:none !important;
+}
+
+.spotify-rider-qr,
+#spotifyRiderQr{
+  display:block !important;
+  width:220px !important;
+  height:220px !important;
+  max-width:92% !important;
+  object-fit:contain !important;
+  background:#fff !important;
+  padding:8px !important;
+  border-radius:16px !important;
+}
+
+@media(max-width:980px){
+  #musicContentLayout.spotify-visible{
+    grid-template-columns:1fr !important;
+  }
+}
