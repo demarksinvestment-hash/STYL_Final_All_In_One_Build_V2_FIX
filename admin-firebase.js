@@ -146,8 +146,7 @@ function renderRequests(data = {}) {
   const items = Object.entries(data || {})
     .map(([id, item]) => ({ id, ...(item || {}) }))
     .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")))
-    .slice(-50);
-
+    .slice(0, 25);
   currentRequestItems = items;
 
   if (!items.length) {
@@ -174,6 +173,8 @@ function renderRequests(data = {}) {
   list.querySelectorAll(".request-play-btn").forEach(btn => {
     btn.addEventListener("click", () => playRequestOnTablet(btn.dataset.query || ""));
   });
+
+  if (continuousQueueEnabled) sendContinuousQueueUpdate("Queue auto-updated");
 }
 
 async function playRequestOnTablet(query) {
@@ -195,8 +196,7 @@ async function sendContinuousQueueUpdate(statusText = "Queue updated") {
     .map(item => ({
       query: `${item.title || ""} ${item.artist || ""}`.trim(),
       videoId: extractYouTubeVideoId(item.link || ""),
-      label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim(),
-      createdAt: item.createdAt || ""
+      label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim()
     }))
     .filter(item => item.query || item.videoId || item.label);
 
@@ -204,18 +204,13 @@ async function sendContinuousQueueUpdate(statusText = "Queue updated") {
     requestQueue: queue,
     requestQueueContinuous: true,
     remoteNonce: Date.now()
-  }, queue.length ? `${statusText}: ${queue.length} request${queue.length !== 1 ? "s" : ""}` : "Continuous queue waiting for requests");
+  }, queue.length ? `${statusText}: ${queue.length} requests` : "Continuous queue waiting for requests");
 }
 
 function listenForRequests() {
   if (!db) return;
   requestsRef = ref(db, `${firebasePaths.collection}/musicRequests`);
-  onValue(requestsRef, (snap) => {
-    renderRequests(snap.exists() ? (snap.val() || {}) : {});
-    if (continuousQueueEnabled) {
-      sendContinuousQueueUpdate("Queue live-updated");
-    }
-  }, (err) => {
+  onValue(requestsRef, (snap) => renderRequests(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Music request sync error", err);
   });
 }
@@ -225,12 +220,8 @@ async function clearRequests() {
   if (!requestsRef) return;
   await remove(requestsRef);
   renderRequests({});
-  await sendRemote("youtubequeuecontinuous", {
-    requestQueue: [],
-    requestQueueContinuous: true,
-    remoteNonce: Date.now()
-  }, "Request queue cleared");
 }
+
 
 function renderBookingPerformance(data = {}) {
   currentBookingClicksData = data || {};
