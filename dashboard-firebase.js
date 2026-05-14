@@ -828,15 +828,6 @@ function resumeMusicPlaylistAfterRequests() {
   }
 }
 
-
-function getRequestQueueItemKey(item = {}) {
-  return `${item.videoId || ""}|${item.query || ""}|${item.label || ""}|${item.createdAt || ""}`;
-}
-
-function findRequestQueueIndex(queue = [], key = "") {
-  return (queue || []).findIndex(item => getRequestQueueItemKey(item) === key);
-}
-
 function normalizeRequestQueue(queue = []) {
   return (Array.isArray(queue) ? queue : [])
     .filter(item => item)
@@ -852,32 +843,22 @@ function queueSignature(queue = []) {
   return normalizeRequestQueue(queue).map(item => `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`).join("||");
 }
 
-
-function showYoutubeQueueIfNeeded() {
-  if (currentView === "youtube" && (requestQueueContinuous || requestQueueActive || (Array.isArray(requestQueue) && requestQueue.length))) {
-    renderRequestQueuePanel();
-  }
-}
-
 function renderRequestQueuePanel() {
   const box = byId("youtubeQueuePanel");
-  const youtubeView = byId("youtubeView");
-  const hasQueue = Array.isArray(requestQueue) && requestQueue.length > 0;
-  if (youtubeView) youtubeView.classList.toggle("youtube-queue-visible", hasQueue || requestQueueActive || requestQueueContinuous);
   if (!box) return;
 
   if (!requestQueue.length) {
-    box.innerHTML = `<div class="queue-title">STYL Request Queue</div><div class="queue-empty">${requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "No active rider requests yet."}</div>`;
+    box.innerHTML = `<div class="queue-title">STYL Request Queue</div><div class="queue-empty">No active rider requests yet.</div>`;
     return;
   }
 
   box.innerHTML = `
     <div class="queue-title">STYL Request Queue</div>
-    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous autoplay ON" : "Queue loaded"}</div>
+    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous play ON" : "Queue loaded"}</div>
     ${requestQueue.map((item, index) => `
       <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
         <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
-        <small>${index === requestQueueIndex && requestQueueActive ? "Now playing" : (index < requestQueueIndex ? "Played / passed" : "Tap to play")}</small>
+        <small>${index === requestQueueIndex && requestQueueActive ? "Now playing" : (item.pending ? "Pending details" : "Tap to play")}</small>
       </button>
     `).join("")}
   `;
@@ -888,6 +869,7 @@ function renderRequestQueuePanel() {
       if (Number.isFinite(index) && requestQueue[index]) {
         requestQueueIndex = index;
         requestQueueActive = true;
+        pauseMusicPlaylistForRequests();
         showView("youtube", "YouTube Lounge", "youtubeBtn");
         playCurrentQueueItem();
       }
@@ -895,70 +877,36 @@ function renderRequestQueuePanel() {
   });
 }
 
-
-function startContinuousQueuePlaybackSoon(reason = "admin-click") {
-  clearRequestQueueTimer();
-  requestQueueActive = true;
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  renderRequestQueuePanel();
-  setYouTubePanelStatus("Starting continuous request queue...");
-
-  // Let the YouTube tab/frame become visible before loading the first video.
-  setTimeout(() => {
-    if (requestQueueContinuous && requestQueue.length) {
-      requestQueueActive = true;
-      if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
-      playCurrentQueueItem();
-    }
-  }, 350);
-
-  // Backup start in case the first iframe load gets swallowed by the tablet browser.
-  setTimeout(() => {
-    if (requestQueueContinuous && requestQueue.length && requestQueueActive) {
-      const frame = getYouTubePanelFrame();
-      const src = String(frame?.src || "");
-      if (!src || src === "about:blank" || src.includes("about:blank")) {
-        playCurrentQueueItem();
-      }
-    }
-  }, 1400);
-}
-
 function updateContinuousRequestQueue(queue = []) {
   const nextQueue = normalizeRequestQueue(queue);
-  const currentKey = requestQueue[requestQueueIndex] ? getRequestQueueItemKey(requestQueue[requestQueueIndex]) : "";
-
-  requestQueueContinuous = true;
+  const nextSignature = queueSignature(nextQueue);
 
   if (!nextQueue.length) {
     requestQueue = [];
     requestQueueIndex = 0;
     requestQueueActive = false;
+    requestQueueContinuous = true;
     requestQueueSignature = "";
     renderRequestQueuePanel();
-    setYouTubePanelStatus("Continuous queue is ON. Waiting for rider requests.");
+    setYouTubePanelStatus("Continuous queue is on. Waiting for rider requests.");
     return;
   }
 
-  requestQueue = nextQueue;
-  requestQueueSignature = queueSignature(requestQueue);
-
-  const preserved = currentKey ? findRequestQueueIndex(requestQueue, currentKey) : -1;
-  if (preserved >= 0) requestQueueIndex = preserved;
-  if (!Number.isFinite(requestQueueIndex) || requestQueueIndex < 0) requestQueueIndex = 0;
-
-  renderRequestQueuePanel();
-
-  if (requestQueueActive) {
-    setYouTubePanelStatus(`Live queue updated: ${requestQueue.length} request${requestQueue.length !== 1 ? "s" : ""}`);
+  if (!requestQueueActive || !requestQueue.length) {
+    startRequestQueue(nextQueue, true);
     return;
   }
 
-  if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
-  requestQueueActive = true;
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  playCurrentQueueItem();
+  if (nextSignature !== requestQueueSignature) {
+    requestQueue = nextQueue;
+    requestQueueSignature = nextSignature;
+    requestQueueContinuous = true;
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
+  }
 }
+
 
 function startRequestQueue(queue = [], continuous = false) {
   requestQueue = normalizeRequestQueue(queue);
@@ -969,80 +917,32 @@ function startRequestQueue(queue = [], continuous = false) {
   renderRequestQueuePanel();
 
   if (!requestQueueActive) {
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Queue is empty.");
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for rider requests." : "Queue is empty.");
     return;
   }
 
+  pauseMusicPlaylistForRequests();
   showView("youtube", "YouTube Lounge", "youtubeBtn");
-  showYoutubeQueueIfNeeded();
-  setYouTubePanelStatus(`Starting request queue 1 of ${requestQueue.length}`);
-  setTimeout(playCurrentQueueItem, 350);
+  setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
+  playCurrentQueueItem();
 }
 
-async function resolveQueueVideoId(item = {}) {
-  if (item.videoId) return item.videoId;
-  const q = item.query || item.label || "";
-  const directId = extractYouTubeVideoId(q);
-  if (directId) return directId;
-  return await searchFirstYouTubeVideoId(q);
-}
-
-async function playCurrentQueueItem() {
-  if (!requestQueue.length) {
-    requestQueueActive = false;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Queue is empty.");
-    return;
-  }
-
-  if (requestQueueIndex >= requestQueue.length) {
-    if (requestQueueContinuous) {
-      requestQueueActive = false;
-      requestQueueIndex = requestQueue.length;
-      renderRequestQueuePanel();
-      setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
-      return;
-    }
-    requestQueueIndex = 0;
-  }
-
-  requestQueueActive = true;
+function playCurrentQueueItem() {
+  if (!requestQueueActive || !requestQueue.length) return;
   clearRequestQueueTimer();
-
   const item = requestQueue[requestQueueIndex] || {};
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  showYoutubeQueueIfNeeded();
-  setYouTubePanelStatus(`Loading request ${requestQueueIndex + 1} of ${requestQueue.length}: ${item.label || item.query || "Requested song"}`);
-
-  const videoId = await resolveQueueVideoId(item);
-
-  if (videoId) {
-    item.videoId = videoId;
-    playYouTubePanelVideo(videoId);
-    const duration = await getYouTubeVideoDurationSeconds(videoId);
-    startRequestQueueTimer(duration ? Math.max(45, duration + 6) : requestQueueFallbackSeconds);
+  if (item.videoId) {
+    playYouTubePanelVideo(item.videoId);
   } else {
-    // Do not leave riders stuck on an embedded search page forever.
-    // Show fallback search, then force next item after fallback time.
-    const frame = getYouTubePanelFrame();
-    if (frame) frame.src = buildYouTubeFallbackUrl(item.query || item.label || "");
-    setYouTubePanelStatus("Could not auto-resolve this request. Skipping to next soon. Add/verify YouTube API key in admin.");
-    startRequestQueueTimer(45);
+    searchYouTubePanel(item.query || item.label || "", true);
   }
-
+  setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
   renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
+  if (!requestQueueActive) return;
   clearRequestQueueTimer();
-
-  if (!requestQueue.length) {
-    requestQueueActive = false;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Request queue finished.");
-    return;
-  }
-
   requestQueueIndex += 1;
 
   if (requestQueueIndex >= requestQueue.length) {
@@ -1051,17 +951,15 @@ function playNextQueueItem() {
       requestQueueIndex = requestQueue.length;
       renderRequestQueuePanel();
       setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
+      resumeMusicPlaylistAfterRequests();
       return;
     }
-
     requestQueueActive = false;
-    requestQueueIndex = 0;
-    renderRequestQueuePanel();
     setYouTubePanelStatus("Request queue finished.");
+    resumeMusicPlaylistAfterRequests();
     return;
   }
 
-  requestQueueActive = true;
   setYouTubePanelStatus(`Next request: ${requestQueueIndex + 1} of ${requestQueue.length}`);
   playCurrentQueueItem();
 }
@@ -1079,6 +977,9 @@ function initYouTubeQueueListener() {
     if (requestQueueActive && playerState === 0) {
       clearRequestQueueTimer();
       setTimeout(playNextQueueItem, 900);
+    } else if (musicPlaylistActive && currentView === "music" && playerState === 0) {
+      clearMusicPlaylistTimer();
+      setTimeout(playNextMusicPlaylistSong, 900);
     }
   });
 }
@@ -1270,15 +1171,7 @@ function applyProfile(data = {}) {
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") {
-        updateContinuousRequestQueue(config.requestQueue || []);
-        setTimeout(() => {
-          if (requestQueueContinuous && requestQueue.length && !requestQueueActive) {
-            requestQueueIndex = requestQueueIndex >= requestQueue.length ? 0 : requestQueueIndex;
-            startContinuousQueuePlaybackSoon("remote-command-retry");
-          }
-        }, 600);
-      }
+      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
