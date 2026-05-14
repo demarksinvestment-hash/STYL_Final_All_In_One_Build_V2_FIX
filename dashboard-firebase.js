@@ -17,7 +17,7 @@ const config = {
   partyMusicUrl: "https://www.youtube.com/embed/videoseries?list=PLFgquLnL59amEA53azfP6qWD5F3eVQfmx&enablejsapi=1&rel=0",
   rnb80sMusicUrl: "https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0",
   afrobeatsMusicUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
-  spotifyMusicUrl: "",
+  spotifyMusicUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
   spotifyRiderUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
@@ -61,9 +61,9 @@ const config = {
       embedUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0"
     },
     spotify: {
-      title: "Play Your Own Music",
-      description: "Scan the QR code to request your favorite song.",
-      embedUrl: ""
+      title: "Spotify",
+      description: "Let riders choose their own music on Spotify.",
+      embedUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator"
     }
   },
   weatherFallback: { temp: "--", icon: "☀️", text: "Weather unavailable" }
@@ -167,7 +167,7 @@ function refreshMusicModeUrls() {
   if (config.musicModes.party) config.musicModes.party.embedUrl = config.partyMusicUrl;
   if (config.musicModes.rnb80s) config.musicModes.rnb80s.embedUrl = config.rnb80sMusicUrl;
   if (config.musicModes.afrobeats) config.musicModes.afrobeats.embedUrl = config.afrobeatsMusicUrl;
-  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = "";
+  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = config.spotifyMusicUrl;
 }
 
 function isSpotifyUrl(url) {
@@ -291,25 +291,33 @@ function updateSpotifyRiderPanel() {
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
-  const isPlayYourOwnMusic = currentMusicMode === "spotify";
-  panel.classList.toggle("hidden", !isPlayYourOwnMusic);
-  byId("musicContentLayout")?.classList.toggle("spotify-visible", isPlayYourOwnMusic);
+  const isSpotify = currentMusicMode === "spotify";
+  panel.classList.toggle("hidden", !isSpotify);
+  byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
   const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
   link.href = riderUrl;
-  link.textContent = "Request Your Music";
-  qr.alt = "Scan to request your music";
   qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
-
-  setSpotifySyncStatus(isPlayYourOwnMusic ? "Request QR Ready" : "Live Playlist Sync: Ready");
 }
 
 function refreshSpotifyFrameForLiveSync() {
-  return;
+  if (currentMusicMode !== "spotify") return;
+  const frame = byId("musicFrame");
+  if (!frame) return;
+  const mode = config.musicModes?.spotify;
+  const url = mode?.embedUrl || config.spotifyMusicUrl;
+  if (!url) return;
+  frame.src = url;
+  const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  setSpotifySyncStatus("Live Playlist Sync: refreshed at " + time);
 }
 
 function startSpotifyLiveSync() {
-  return;
+  stopSpotifyLiveSync();
+  if (!config.spotifySyncEnabled || currentMusicMode !== "spotify") return;
+  const interval = Math.max(15, Number(config.spotifySyncIntervalSeconds || 25)) * 1000;
+  setSpotifySyncStatus("Live Playlist Sync: active");
+  spotifySyncTimer = setInterval(refreshSpotifyFrameForLiveSync, interval);
 }
 
 function stopSpotifyLiveSync() {
@@ -726,7 +734,7 @@ const stylSmartPlaylists = {
     pool: ["Rema Calm Down","Burna Boy Last Last","Wizkid Essence","Davido Unavailable","Asake Lonely At The Top","Ayra Starr Rush","CKay Love Nwantiti","Kizz Daniel Buga","Tyla Water","Fireboy DML Peru","Omah Lay Soso","Tekno Pana","P-Square Personally","Flavour Nwa Baby","Tiwa Savage Somebody's Son"]
   },
   spotify: {
-    title: "Play Your Own Music",
+    title: "Spotify Requests",
     description: "Rider request inspiration and popular ride selections.",
     pool: ["Afrobeats latest hits","Smooth jazz lounge music","R&B 80s classics","Top clean party songs","Luxury lounge music","Kenny G greatest hits","Sade greatest hits","Wizkid Essence","Burna Boy Last Last","Rema Calm Down"]
   }
@@ -747,7 +755,79 @@ function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
 }
 
 function renderMusicPlaylistBrowser() {
-  return;
+  const box = byId("musicPlaylistBrowser");
+  if (!box) return;
+  const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
+  const list = stylSmartPlaylists[active];
+
+  if (!musicPlaylistQueue.length || !musicPlaylistQueue[0]?.query) {
+    musicPlaylistQueue = buildStylPlaylistQueue(active);
+    musicPlaylistIndex = 0;
+  }
+
+  box.innerHTML = `
+    <div class="music-browser-head">
+      <div>
+        <div class="queue-title">STYL ${list.title} Playlist</div>
+        <div class="queue-copy">Dynamic queue • reshuffles every session • continuous autoplay</div>
+      </div>
+      <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
+    </div>
+    <div class="styl-playlist-tabs">
+      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
+      `).join("")}
+    </div>
+    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
+    <div class="styl-playlist-list">
+      ${musicPlaylistQueue.map((item, index) => `
+        <button type="button" class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}">
+          <span>${index + 1}. ${item.label}</span>
+          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
+        </button>
+      `).join("")}
+    </div>
+    <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
+  `;
+
+  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
+      currentMusicMode = currentStylPlaylistKey;
+      musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+      musicPlaylistIndex = 0;
+      musicPlaylistActive = false;
+      clearMusicPlaylistTimer();
+      setMusicMode(currentStylPlaylistKey);
+      renderMusicPlaylistBrowser();
+  initEndTripOverlay();
+    });
+  });
+
+  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index)) {
+        musicPlaylistIndex = index;
+        musicPlaylistActive = true;
+        playMusicPlaylistCurrent();
+      }
+    });
+  });
+
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
+    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+    musicPlaylistActive = false;
+    clearMusicPlaylistTimer();
+    renderMusicPlaylistBrowser();
+  });
+
+  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
+    musicPlaylistActive = true;
+    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    playMusicPlaylistCurrent();
+  });
 }
 
 function clearMusicPlaylistTimer() {
@@ -797,7 +877,8 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  }
+  renderMusicPlaylistBrowser();
+}
 
 async function scheduleMusicPlaylistNext(videoId) {
   clearMusicPlaylistTimer();
@@ -828,15 +909,6 @@ function resumeMusicPlaylistAfterRequests() {
   }
 }
 
-
-function getRequestQueueItemKey(item = {}) {
-  return `${item.videoId || ""}|${item.query || ""}|${item.label || ""}|${item.createdAt || ""}`;
-}
-
-function findRequestQueueIndex(queue = [], key = "") {
-  return (queue || []).findIndex(item => getRequestQueueItemKey(item) === key);
-}
-
 function normalizeRequestQueue(queue = []) {
   return (Array.isArray(queue) ? queue : [])
     .filter(item => item)
@@ -857,17 +929,17 @@ function renderRequestQueuePanel() {
   if (!box) return;
 
   if (!requestQueue.length) {
-    box.innerHTML = `<div class="queue-title">STYL Request Queue</div><div class="queue-empty">${requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "No active rider requests yet."}</div>`;
+    box.innerHTML = `<div class="queue-title">STYL Request Queue</div><div class="queue-empty">No active rider requests yet.</div>`;
     return;
   }
 
   box.innerHTML = `
     <div class="queue-title">STYL Request Queue</div>
-    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous autoplay ON" : "Queue loaded"}</div>
+    <div class="queue-copy">${requestQueue.length} active request${requestQueue.length !== 1 ? "s" : ""} • ${requestQueueContinuous ? "Continuous play ON" : "Queue loaded"}</div>
     ${requestQueue.map((item, index) => `
       <button type="button" class="queue-item ${index === requestQueueIndex && requestQueueActive ? "active" : ""}" data-index="${index}">
         <span>${index + 1}. ${item.label || item.query || "Requested song"}</span>
-        <small>${index === requestQueueIndex && requestQueueActive ? "Now playing" : (index < requestQueueIndex ? "Played / passed" : "Tap to play")}</small>
+        <small>${index === requestQueueIndex && requestQueueActive ? "Now playing" : (item.pending ? "Pending details" : "Tap to play")}</small>
       </button>
     `).join("")}
   `;
@@ -878,6 +950,7 @@ function renderRequestQueuePanel() {
       if (Number.isFinite(index) && requestQueue[index]) {
         requestQueueIndex = index;
         requestQueueActive = true;
+        pauseMusicPlaylistForRequests();
         showView("youtube", "YouTube Lounge", "youtubeBtn");
         playCurrentQueueItem();
       }
@@ -885,70 +958,36 @@ function renderRequestQueuePanel() {
   });
 }
 
-
-function startContinuousQueuePlaybackSoon(reason = "admin-click") {
-  clearRequestQueueTimer();
-  requestQueueActive = true;
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  renderRequestQueuePanel();
-  setYouTubePanelStatus("Starting continuous request queue...");
-
-  // Let the YouTube tab/frame become visible before loading the first video.
-  setTimeout(() => {
-    if (requestQueueContinuous && requestQueue.length) {
-      requestQueueActive = true;
-      if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
-      playCurrentQueueItem();
-    }
-  }, 350);
-
-  // Backup start in case the first iframe load gets swallowed by the tablet browser.
-  setTimeout(() => {
-    if (requestQueueContinuous && requestQueue.length && requestQueueActive) {
-      const frame = getYouTubePanelFrame();
-      const src = String(frame?.src || "");
-      if (!src || src === "about:blank" || src.includes("about:blank")) {
-        playCurrentQueueItem();
-      }
-    }
-  }, 1400);
-}
-
 function updateContinuousRequestQueue(queue = []) {
   const nextQueue = normalizeRequestQueue(queue);
-  const currentKey = requestQueue[requestQueueIndex] ? getRequestQueueItemKey(requestQueue[requestQueueIndex]) : "";
-
-  requestQueueContinuous = true;
+  const nextSignature = queueSignature(nextQueue);
 
   if (!nextQueue.length) {
     requestQueue = [];
     requestQueueIndex = 0;
     requestQueueActive = false;
+    requestQueueContinuous = true;
     requestQueueSignature = "";
     renderRequestQueuePanel();
-    setYouTubePanelStatus("Continuous queue is ON. Waiting for rider requests.");
+    setYouTubePanelStatus("Continuous queue is on. Waiting for rider requests.");
     return;
   }
 
-  requestQueue = nextQueue;
-  requestQueueSignature = queueSignature(requestQueue);
-
-  const preserved = currentKey ? findRequestQueueIndex(requestQueue, currentKey) : -1;
-  if (preserved >= 0) requestQueueIndex = preserved;
-  if (!Number.isFinite(requestQueueIndex) || requestQueueIndex < 0) requestQueueIndex = 0;
-
-  renderRequestQueuePanel();
-
-  if (requestQueueActive) {
-    setYouTubePanelStatus(`Live queue updated: ${requestQueue.length} request${requestQueue.length !== 1 ? "s" : ""}`);
+  if (!requestQueueActive || !requestQueue.length) {
+    startRequestQueue(nextQueue, true);
     return;
   }
 
-  if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
-  requestQueueActive = true;
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  playCurrentQueueItem();
+  if (nextSignature !== requestQueueSignature) {
+    requestQueue = nextQueue;
+    requestQueueSignature = nextSignature;
+    requestQueueContinuous = true;
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
+    renderRequestQueuePanel();
+    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
+  }
 }
+
 
 function startRequestQueue(queue = [], continuous = false) {
   requestQueue = normalizeRequestQueue(queue);
@@ -959,78 +998,32 @@ function startRequestQueue(queue = [], continuous = false) {
   renderRequestQueuePanel();
 
   if (!requestQueueActive) {
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Queue is empty.");
+    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is on. Waiting for rider requests." : "Queue is empty.");
     return;
   }
 
+  pauseMusicPlaylistForRequests();
   showView("youtube", "YouTube Lounge", "youtubeBtn");
-  setYouTubePanelStatus(`Starting request queue 1 of ${requestQueue.length}`);
-  setTimeout(playCurrentQueueItem, 350);
+  setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
+  playCurrentQueueItem();
 }
 
-async function resolveQueueVideoId(item = {}) {
-  if (item.videoId) return item.videoId;
-  const q = item.query || item.label || "";
-  const directId = extractYouTubeVideoId(q);
-  if (directId) return directId;
-  return await searchFirstYouTubeVideoId(q);
-}
-
-async function playCurrentQueueItem() {
-  if (!requestQueue.length) {
-    requestQueueActive = false;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Queue is empty.");
-    return;
-  }
-
-  if (requestQueueIndex >= requestQueue.length) {
-    if (requestQueueContinuous) {
-      requestQueueActive = false;
-      requestQueueIndex = requestQueue.length;
-      renderRequestQueuePanel();
-      setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
-      return;
-    }
-    requestQueueIndex = 0;
-  }
-
-  requestQueueActive = true;
+function playCurrentQueueItem() {
+  if (!requestQueueActive || !requestQueue.length) return;
   clearRequestQueueTimer();
-
   const item = requestQueue[requestQueueIndex] || {};
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
-  setYouTubePanelStatus(`Loading request ${requestQueueIndex + 1} of ${requestQueue.length}: ${item.label || item.query || "Requested song"}`);
-
-  const videoId = await resolveQueueVideoId(item);
-
-  if (videoId) {
-    item.videoId = videoId;
-    playYouTubePanelVideo(videoId);
-    const duration = await getYouTubeVideoDurationSeconds(videoId);
-    startRequestQueueTimer(duration ? Math.max(45, duration + 6) : requestQueueFallbackSeconds);
+  if (item.videoId) {
+    playYouTubePanelVideo(item.videoId);
   } else {
-    // Do not leave riders stuck on an embedded search page forever.
-    // Show fallback search, then force next item after fallback time.
-    const frame = getYouTubePanelFrame();
-    if (frame) frame.src = buildYouTubeFallbackUrl(item.query || item.label || "");
-    setYouTubePanelStatus("Could not auto-resolve this request. Skipping to next soon. Add/verify YouTube API key in admin.");
-    startRequestQueueTimer(45);
+    searchYouTubePanel(item.query || item.label || "", true);
   }
-
+  setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
   renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
+  if (!requestQueueActive) return;
   clearRequestQueueTimer();
-
-  if (!requestQueue.length) {
-    requestQueueActive = false;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(requestQueueContinuous ? "Continuous queue is ON. Waiting for rider requests." : "Request queue finished.");
-    return;
-  }
-
   requestQueueIndex += 1;
 
   if (requestQueueIndex >= requestQueue.length) {
@@ -1039,17 +1032,15 @@ function playNextQueueItem() {
       requestQueueIndex = requestQueue.length;
       renderRequestQueuePanel();
       setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
+      resumeMusicPlaylistAfterRequests();
       return;
     }
-
     requestQueueActive = false;
-    requestQueueIndex = 0;
-    renderRequestQueuePanel();
     setYouTubePanelStatus("Request queue finished.");
+    resumeMusicPlaylistAfterRequests();
     return;
   }
 
-  requestQueueActive = true;
   setYouTubePanelStatus(`Next request: ${requestQueueIndex + 1} of ${requestQueue.length}`);
   playCurrentQueueItem();
 }
@@ -1067,6 +1058,9 @@ function initYouTubeQueueListener() {
     if (requestQueueActive && playerState === 0) {
       clearRequestQueueTimer();
       setTimeout(playNextQueueItem, 900);
+    } else if (musicPlaylistActive && currentView === "music" && playerState === 0) {
+      clearMusicPlaylistTimer();
+      setTimeout(playNextMusicPlaylistSong, 900);
     }
   });
 }
@@ -1114,15 +1108,13 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    if (currentMusicMode === "spotify") {
-      byId("musicFrame").src = "about:blank";
-    } else {
-      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
-    }
+    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function')   stopSpotifyLiveSync();
+  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
+  if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
@@ -1258,15 +1250,7 @@ function applyProfile(data = {}) {
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") {
-        updateContinuousRequestQueue(config.requestQueue || []);
-        setTimeout(() => {
-          if (requestQueueContinuous && requestQueue.length && !requestQueueActive) {
-            requestQueueIndex = requestQueueIndex >= requestQueue.length ? 0 : requestQueueIndex;
-            startContinuousQueuePlaybackSoon("remote-command-retry");
-          }
-        }, 600);
-      }
+      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
       else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
@@ -1366,7 +1350,8 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
-    initSwipe();
+  renderMusicPlaylistBrowser();
+  initSwipe();
   requestBrowserWeather();
   updateClock();
   setInterval(updateClock, 30000);
