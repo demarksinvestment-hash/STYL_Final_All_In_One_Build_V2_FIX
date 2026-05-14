@@ -149,7 +149,7 @@
                   <button class="music-mode-btn" data-music-mode="party" type="button">🔥 Party</button>
                   <button class="music-mode-btn" data-music-mode="rnb80s" type="button">📻 R&amp;B 80s</button>
                   <button class="music-mode-btn" data-music-mode="afrobeats" type="button">🌍 Afrobeats</button>
-                  <button class="music-mode-btn" data-music-mode="spotify" type="button">🎵 Play Your Own Music</button>
+                  <button class="music-mode-btn" data-music-mode="spotify" type="button">🟢 Spotify</button>
                 </div>
                 <div class="music-panel">
                   <div class="music-title" id="musicModeTitle">Executive Mode</div>
@@ -158,15 +158,16 @@
                     <div class="embed-wrap music-embed-wrap media-sound-wrap"><button id="tapForSoundMusicBtn" class="tap-sound-overlay hidden" type="button" data-frame="musicFrame">🔊 Tap for Sound</button><iframe id="musicFrame" title="Play Music" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
 
                   <div id="spotifyRiderPanel" class="spotify-rider-panel hidden">
-                    <div class="spotify-rider-title">Play Your Own Music</div>
-                    <div class="spotify-rider-copy">Scan or tap below to request your favorite song.</div>
-                    <div id="spotifySyncStatus" class="spotify-sync-status">Request QR Ready</div>
+                    <div class="spotify-rider-title">Request a Song</div>
+                    <div class="spotify-rider-copy">Scan or tap below to send a song request to your chauffeur.</div>
+                    <div id="spotifySyncStatus" class="spotify-sync-status">Live Playlist Sync: Ready</div>
                     <div class="spotify-rider-row">
                       <img id="spotifyRiderQr" class="spotify-rider-qr" alt="Spotify QR" />
-                      <a id="spotifyRiderLink" class="spotify-rider-btn" target="_blank" rel="noopener">Request Your Music</a>
+                      <a id="spotifyRiderLink" class="spotify-rider-btn" target="_blank" rel="noopener">Request Song</a>
                     </div>
                   </div>
                   </div>
+                  <div id="musicPlaylistBrowser" class="music-playlist-browser"></div>
                 </div>
               </div>
             </section>
