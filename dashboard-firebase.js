@@ -17,7 +17,7 @@ const config = {
   partyMusicUrl: "https://www.youtube.com/embed/videoseries?list=PLFgquLnL59amEA53azfP6qWD5F3eVQfmx&enablejsapi=1&rel=0",
   rnb80sMusicUrl: "https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0",
   afrobeatsMusicUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
-  spotifyMusicUrl: "",
+  spotifyMusicUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
   spotifyRiderUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
@@ -61,9 +61,9 @@ const config = {
       embedUrl: "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0"
     },
     spotify: {
-      title: "Play Your Own Music",
-      description: "Scan the QR code to request your favorite song.",
-      embedUrl: ""
+      title: "Spotify",
+      description: "Let riders choose their own music on Spotify.",
+      embedUrl: "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator"
     }
   },
   weatherFallback: { temp: "--", icon: "☀️", text: "Weather unavailable" }
@@ -167,7 +167,7 @@ function refreshMusicModeUrls() {
   if (config.musicModes.party) config.musicModes.party.embedUrl = config.partyMusicUrl;
   if (config.musicModes.rnb80s) config.musicModes.rnb80s.embedUrl = config.rnb80sMusicUrl;
   if (config.musicModes.afrobeats) config.musicModes.afrobeats.embedUrl = config.afrobeatsMusicUrl;
-  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = "";
+  if (config.musicModes.spotify) config.musicModes.spotify.embedUrl = config.spotifyMusicUrl;
 }
 
 function isSpotifyUrl(url) {
@@ -291,25 +291,33 @@ function updateSpotifyRiderPanel() {
   const link = byId("spotifyRiderLink");
   if (!panel || !qr || !link) return;
 
-  const isPlayYourOwnMusic = currentMusicMode === "spotify";
-  panel.classList.toggle("hidden", !isPlayYourOwnMusic);
-  byId("musicContentLayout")?.classList.toggle("spotify-visible", isPlayYourOwnMusic);
+  const isSpotify = currentMusicMode === "spotify";
+  panel.classList.toggle("hidden", !isSpotify);
+  byId("musicContentLayout")?.classList.toggle("spotify-visible", isSpotify);
 
   const riderUrl = config.musicRequestUrl || config.spotifyRiderUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
   link.href = riderUrl;
-  link.textContent = "Request Your Music";
-  qr.alt = "Scan to request your music";
   qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(riderUrl);
-
-  setSpotifySyncStatus(isPlayYourOwnMusic ? "Request QR Ready" : "Live Playlist Sync: Ready");
 }
 
 function refreshSpotifyFrameForLiveSync() {
-  return;
+  if (currentMusicMode !== "spotify") return;
+  const frame = byId("musicFrame");
+  if (!frame) return;
+  const mode = config.musicModes?.spotify;
+  const url = mode?.embedUrl || config.spotifyMusicUrl;
+  if (!url) return;
+  frame.src = url;
+  const time = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  setSpotifySyncStatus("Live Playlist Sync: refreshed at " + time);
 }
 
 function startSpotifyLiveSync() {
-  return;
+  stopSpotifyLiveSync();
+  if (!config.spotifySyncEnabled || currentMusicMode !== "spotify") return;
+  const interval = Math.max(15, Number(config.spotifySyncIntervalSeconds || 25)) * 1000;
+  setSpotifySyncStatus("Live Playlist Sync: active");
+  spotifySyncTimer = setInterval(refreshSpotifyFrameForLiveSync, interval);
 }
 
 function stopSpotifyLiveSync() {
@@ -726,7 +734,7 @@ const stylSmartPlaylists = {
     pool: ["Rema Calm Down","Burna Boy Last Last","Wizkid Essence","Davido Unavailable","Asake Lonely At The Top","Ayra Starr Rush","CKay Love Nwantiti","Kizz Daniel Buga","Tyla Water","Fireboy DML Peru","Omah Lay Soso","Tekno Pana","P-Square Personally","Flavour Nwa Baby","Tiwa Savage Somebody's Son"]
   },
   spotify: {
-    title: "Play Your Own Music",
+    title: "Spotify Requests",
     description: "Rider request inspiration and popular ride selections.",
     pool: ["Afrobeats latest hits","Smooth jazz lounge music","R&B 80s classics","Top clean party songs","Luxury lounge music","Kenny G greatest hits","Sade greatest hits","Wizkid Essence","Burna Boy Last Last","Rema Calm Down"]
   }
@@ -747,7 +755,79 @@ function buildStylPlaylistQueue(key = currentStylPlaylistKey) {
 }
 
 function renderMusicPlaylistBrowser() {
-  return;
+  const box = byId("musicPlaylistBrowser");
+  if (!box) return;
+  const active = stylSmartPlaylists[currentStylPlaylistKey] ? currentStylPlaylistKey : "executive";
+  const list = stylSmartPlaylists[active];
+
+  if (!musicPlaylistQueue.length || !musicPlaylistQueue[0]?.query) {
+    musicPlaylistQueue = buildStylPlaylistQueue(active);
+    musicPlaylistIndex = 0;
+  }
+
+  box.innerHTML = `
+    <div class="music-browser-head">
+      <div>
+        <div class="queue-title">STYL ${list.title} Playlist</div>
+        <div class="queue-copy">Dynamic queue • reshuffles every session • continuous autoplay</div>
+      </div>
+      <button type="button" id="reshuffleMusicQueueBtn" class="youtube-small-btn">Reshuffle</button>
+    </div>
+    <div class="styl-playlist-tabs">
+      ${Object.entries(stylSmartPlaylists).map(([key, playlist]) => `
+        <button type="button" class="styl-playlist-tab ${key === active ? "active" : ""}" data-playlist-key="${key}">${playlist.title}</button>
+      `).join("")}
+    </div>
+    <div class="music-now-playing">${musicPlaylistActive ? `Now Playing: ${musicPlaylistQueue[musicPlaylistIndex]?.label || "STYL playlist"}` : "Tap any song or Start Playlist."}</div>
+    <div class="styl-playlist-list">
+      ${musicPlaylistQueue.map((item, index) => `
+        <button type="button" class="styl-playlist-song ${musicPlaylistActive && index === musicPlaylistIndex ? "active" : ""}" data-index="${index}">
+          <span>${index + 1}. ${item.label}</span>
+          <small>${musicPlaylistActive && index === musicPlaylistIndex ? "Now playing" : "Tap to play"}</small>
+        </button>
+      `).join("")}
+    </div>
+    <button type="button" id="startMusicPlaylistBtn" class="admin-btn full-btn music-start-btn">Start Continuous STYL Playlist</button>
+  `;
+
+  box.querySelectorAll(".styl-playlist-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentStylPlaylistKey = btn.dataset.playlistKey || "executive";
+      currentMusicMode = currentStylPlaylistKey;
+      musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+      musicPlaylistIndex = 0;
+      musicPlaylistActive = false;
+      clearMusicPlaylistTimer();
+      setMusicMode(currentStylPlaylistKey);
+      renderMusicPlaylistBrowser();
+  initEndTripOverlay();
+    });
+  });
+
+  box.querySelectorAll(".styl-playlist-song").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.dataset.index || 0);
+      if (Number.isFinite(index)) {
+        musicPlaylistIndex = index;
+        musicPlaylistActive = true;
+        playMusicPlaylistCurrent();
+      }
+    });
+  });
+
+  byId("reshuffleMusicQueueBtn")?.addEventListener("click", () => {
+    musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    musicPlaylistIndex = 0;
+    musicPlaylistActive = false;
+    clearMusicPlaylistTimer();
+    renderMusicPlaylistBrowser();
+  });
+
+  byId("startMusicPlaylistBtn")?.addEventListener("click", () => {
+    musicPlaylistActive = true;
+    if (!musicPlaylistQueue.length) musicPlaylistQueue = buildStylPlaylistQueue(currentStylPlaylistKey);
+    playMusicPlaylistCurrent();
+  });
 }
 
 function clearMusicPlaylistTimer() {
@@ -797,7 +877,8 @@ async function playMusicPlaylistCurrent() {
     musicPlaylistTimer = setTimeout(playNextMusicPlaylistSong, requestQueueFallbackSeconds * 1000);
   }
 
-  }
+  renderMusicPlaylistBrowser();
+}
 
 async function scheduleMusicPlaylistNext(videoId) {
   clearMusicPlaylistTimer();
@@ -1027,15 +1108,13 @@ function setMusicMode(key) {
   if (byId("musicModeTitle")) byId("musicModeTitle").textContent = mode.title;
   if (byId("musicModeCopy")) byId("musicModeCopy").textContent = mode.description;
   if (byId("musicFrame")) {
-    if (currentMusicMode === "spotify") {
-      byId("musicFrame").src = "about:blank";
-    } else {
-      byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
-    }
+    byId("musicFrame").src = currentView === "music" ? forceAutoplay(mode.embedUrl) : safeEmbed(mode.embedUrl);
   }
   document.querySelectorAll(".music-mode-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.musicMode === currentMusicMode));
   updateSpotifyRiderPanel();
-  if (typeof renderMusicPlaylistBrowser === 'function')   stopSpotifyLiveSync();
+  if (typeof renderMusicPlaylistBrowser === 'function') renderMusicPlaylistBrowser();
+  if (currentMusicMode === "spotify") startSpotifyLiveSync();
+  else stopSpotifyLiveSync();
   if (currentView === "music") {
     stopAllPlayers();
     afterViewAudioKick("music");
@@ -1271,7 +1350,8 @@ window.addEventListener("load", () => {
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
-    initSwipe();
+  renderMusicPlaylistBrowser();
+  initSwipe();
   requestBrowserWeather();
   updateClock();
   setInterval(updateClock, 30000);
