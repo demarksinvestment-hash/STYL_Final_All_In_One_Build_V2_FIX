@@ -7,6 +7,8 @@ let db = null;
 let liveDoc = null;
 let requestsRef = null;
 let bookingClicksRef = null;
+let tabletHealthRef = null;
+let currentTabletHealthData = {};
 let currentBookingClicksData = {};
 let currentRequestItems = [];
 let continuousQueueEnabled = false;
@@ -138,6 +140,89 @@ function extractYouTubeVideoId(value) {
   }
   return "";
 }
+
+
+function formatHealthAge(iso) {
+  if (!iso) return "Never";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return "Unknown";
+  const sec = Math.max(0, Math.round(ms / 1000));
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  return `${Math.round(min / 60)}h ago`;
+}
+
+function renderTabletHealth(data = {}) {
+  currentTabletHealthData = data || {};
+  const panel = byId("tabletHealthPanel");
+  const onlineCountEl = byId("healthOnlineCount");
+  const queueStatusEl = byId("healthQueueStatus");
+  const lastSyncEl = byId("healthLastSync");
+
+  const now = Date.now();
+  const tablets = Object.entries(data || {})
+    .map(([id, item]) => ({ id, ...(item || {}) }))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+
+  const online = tablets.filter(t => {
+    const age = now - new Date(t.updatedAt || 0).getTime();
+    return Number.isFinite(age) && age <= 25000;
+  });
+
+  if (onlineCountEl) onlineCountEl.textContent = `${online.length}/${tablets.length || 0}`;
+
+  const anyQueue = tablets.find(t => t.queueActive || t.queueContinuous || Number(t.queueLength || 0) > 0);
+  if (queueStatusEl) {
+    queueStatusEl.textContent = anyQueue
+      ? `${anyQueue.queueActive ? "Playing" : "Ready"} • ${Number(anyQueue.queueLength || 0)}`
+      : "Idle";
+  }
+
+  if (lastSyncEl) {
+    const newest = tablets[0]?.updatedAt || "";
+    lastSyncEl.textContent = formatHealthAge(newest);
+  }
+
+  if (!panel) return;
+
+  if (!tablets.length) {
+    panel.innerHTML = `<div class="health-empty">Waiting for tablets to report online...</div>`;
+    return;
+  }
+
+  panel.innerHTML = tablets.map(t => {
+    const age = now - new Date(t.updatedAt || 0).getTime();
+    const isOnline = Number.isFinite(age) && age <= 25000;
+    const battery = Number.isFinite(Number(t.batteryPercent)) ? `${t.batteryPercent}%${t.charging ? " ⚡" : ""}` : "N/A";
+    const queue = Number(t.queueLength || 0);
+    const view = String(t.currentView || "home");
+    const playback = String(t.playback || view);
+    return `<div class="tablet-health-card ${isOnline ? "online" : "offline"}">
+      <div class="tablet-health-top">
+        <strong>${isOnline ? "Online" : "Offline"}</strong>
+        <span>${formatHealthAge(t.updatedAt)}</span>
+      </div>
+      <div class="tablet-health-row"><span>Device</span><b>${escapeHtml(t.id || t.deviceId || "Tablet")}</b></div>
+      <div class="tablet-health-row"><span>View</span><b>${escapeHtml(view)}</b></div>
+      <div class="tablet-health-row"><span>Playing</span><b>${escapeHtml(playback)}</b></div>
+      <div class="tablet-health-row"><span>Queue</span><b>${t.queueActive ? "Playing" : (t.queueContinuous ? "Ready" : "Idle")} • ${queue}</b></div>
+      <div class="tablet-health-row"><span>Battery</span><b>${escapeHtml(battery)}</b></div>
+    </div>`;
+  }).join("");
+}
+
+function listenForTabletHealth() {
+  if (!db || tabletHealthRef) return;
+  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth`);
+  onValue(tabletHealthRef, (snap) => {
+    renderTabletHealth(snap.exists() ? (snap.val() || {}) : {});
+  }, (err) => {
+    console.error("Tablet health sync error", err);
+  });
+  setInterval(() => renderTabletHealth(currentTabletHealthData), 5000);
+}
+
 
 function renderRequests(data = {}) {
   const list = byId("requestsList");
@@ -335,6 +420,7 @@ async function loadLiveProfile() {
   db = getDatabase(app);
   liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   listenForRequests();
+  listenForTabletHealth();
   listenForBookingClicks();
 
   onValue(liveDoc, (snap) => {
