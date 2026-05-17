@@ -78,27 +78,9 @@ async function saveSources() {
   await savePayload(payload, "Stable sources saved");
 }
 
-
-function getTabletSyncStartAt(command) {
-  const syncCommands = new Set([
-    "youtube",
-    "youtubepanel",
-    "youtubequeue",
-    "youtubequeuecontinuous",
-    "news",
-    "sports",
-    "music"
-  ]);
-
-  return syncCommands.has(String(command || "").toLowerCase())
-    ? Date.now() + 1800
-    : 0;
-}
-
 async function sendRemote(command, extra = {}, label = "Remote Sent") {
   const payload = buildProfile();
   payload.remoteCommand = command;
-  payload.syncStartAt = getTabletSyncStartAt(command);
   Object.assign(payload, extra);
   renderPreview(label);
   await savePayload(payload, label);
@@ -114,13 +96,11 @@ async function goLive(kind) {
   if (kind === "news") {
     if (!payload.newsLiveOverride) { setStatus("Paste a News live override link first"); return; }
     payload.remoteCommand = "news";
-    payload.syncStartAt = getTabletSyncStartAt("news");
     renderPreview("Go Live News");
     await savePayload(payload, "Live news sent");
   } else if (kind === "sports") {
     if (!payload.sportsLiveOverride) { setStatus("Paste a Sports live override link first"); return; }
     payload.remoteCommand = "sports";
-    payload.syncStartAt = getTabletSyncStartAt("sports");
     renderPreview("Go Live Sports");
     await savePayload(payload, "Live sports sent");
   }
