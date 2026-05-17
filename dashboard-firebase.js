@@ -34,6 +34,7 @@ const config = {
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
+  syncStartAt: 0,
   musicModes: {
     executive: {
       title: "Executive Mode",
@@ -1267,6 +1268,13 @@ async function requestBrowserWeather() {
   }
 }
 
+
+function runAtTabletSyncStart(callback) {
+  const startAt = Number(config.syncStartAt || 0);
+  const wait = startAt ? Math.max(0, startAt - Date.now()) : 0;
+  setTimeout(callback, wait);
+}
+
 function applyProfile(data = {}) {
   Object.assign(config, data || {});
   refreshMusicModeUrls();
@@ -1295,13 +1303,13 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Watch News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
-      else if (cmd === "music") showView("music", "Play Music", "musicBtn");
-      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
-      else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
-      else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
-      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
+      if (cmd === "news") runAtTabletSyncStart(() => showView("news", "Watch News", "newsBtn"));
+      else if (cmd === "sports") runAtTabletSyncStart(() => showView("sports", "Watch Sports", "sportsBtn"));
+      else if (cmd === "music") runAtTabletSyncStart(() => showView("music", "Play Music", "musicBtn"));
+      else if (cmd === "youtubepanel") { runAtTabletSyncStart(() => { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }); }
+      else if (cmd === "youtubequeue") { runAtTabletSyncStart(() => startRequestQueue(config.requestQueue || [], false)); }
+      else if (cmd === "youtubequeuecontinuous") { runAtTabletSyncStart(() => updateContinuousRequestQueue(config.requestQueue || [])); }
+      else if (cmd === "youtube") runAtTabletSyncStart(() => showView("youtube", "YouTube Lounge", "youtubeBtn"));
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
@@ -1425,3 +1433,5 @@ window.addEventListener("load", () => {
 });
 
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
+
+console.log("TABLET_SYNC_START_PATCH_2 loaded");
