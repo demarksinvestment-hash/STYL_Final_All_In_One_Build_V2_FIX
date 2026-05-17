@@ -32,6 +32,7 @@
         <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">▶️</span><span class="tab-text">YouTube Lounge</span></button>
         <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">Watch News</span></button>
         <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">🏈</span><span class="tab-text">Watch Sports</span></button>
+        <button class="tab-btn" id="airportBtn" type="button"><span class="tab-icon">✈️</span><span class="tab-text">Airport Info</span></button>
         <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Play Music</span></button>
         <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Next Ride</span></button>
       </nav>
@@ -166,6 +167,58 @@
                       <a id="spotifyRiderLink" class="spotify-rider-btn" target="_blank" rel="noopener">Request Your Music</a>
                     </div>
                   </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+
+            <section id="airportView" class="view">
+              <div class="airport-info-system">
+                <div class="airport-hero-card">
+                  <div>
+                    <div class="airport-kicker">STYL Travel Assistant</div>
+                    <h2>Airport Info</h2>
+                    <p>Quick pickup guidance for DFW, Love Field, and JSX riders.</p>
+                  </div>
+                  <button type="button" class="airport-return-btn" id="airportBookReturnBtn">Book Return Ride</button>
+                </div>
+
+                <div class="airport-card-grid">
+                  <button type="button" class="airport-card active" data-airport-card="dal">
+                    <span>DAL</span>
+                    <strong>Love Field</strong>
+                    <small>Baggage Claim Door 1</small>
+                  </button>
+                  <button type="button" class="airport-card" data-airport-card="jsx">
+                    <span>JSX</span>
+                    <strong>Private Terminal</strong>
+                    <small>Baggage claim area</small>
+                  </button>
+                  <button type="button" class="airport-card" data-airport-card="dfw">
+                    <span>DFW</span>
+                    <strong>DFW Airport</strong>
+                    <small>Flight tracking required</small>
+                  </button>
+                </div>
+
+                <div class="airport-details-layout">
+                  <div class="airport-instruction-panel">
+                    <div class="airport-section-title">Pickup Instructions</div>
+                    <div id="airportInstructionTitle" class="airport-instruction-title">Love Field Airport (DAL)</div>
+                    <p id="airportInstructionText" class="airport-instruction-text">Please meet your chauffeur outside Baggage Claim Door 1.</p>
+                    <div class="airport-note-box">
+                      <strong>STYL Tip</strong>
+                      <span id="airportTipText">Have your phone on and look for your chauffeur’s vehicle description.</span>
+                    </div>
+                  </div>
+
+                  <div class="airport-action-panel">
+                    <div class="airport-section-title">Quick Actions</div>
+                    <button type="button" class="airport-action-btn" data-airport-action="dfw">DFW Pickup Info</button>
+                    <button type="button" class="airport-action-btn" data-airport-action="dal">Love Field Pickup Info</button>
+                    <button type="button" class="airport-action-btn" data-airport-action="jsx">JSX Pickup Info</button>
+                    <button type="button" class="airport-action-btn" id="airportBookBtn">Book Next Ride</button>
                   </div>
                 </div>
               </div>
