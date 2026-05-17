@@ -1391,6 +1391,52 @@ function initTabletHealth(db) {
 }
 
 
+
+const airportInfoData = {
+  dal: {
+    title: "Love Field Airport (DAL)",
+    text: "Please meet your chauffeur outside Baggage Claim Door 1.",
+    tip: "For Love Field pickups, Baggage Claim Door 1 is the preferred STYL meeting point."
+  },
+  jsx: {
+    title: "JSX",
+    text: "Please meet your chauffeur outside the baggage claim area.",
+    tip: "JSX pickups are simple and private. Your chauffeur will be ready near the baggage claim area."
+  },
+  dfw: {
+    title: "DFW Airport",
+    text: "Your flight number is required so your chauffeur can track your flight and be ready to meet you outside the baggage claim area of your arrival gate.",
+    tip: "Please provide your airline and flight number before arrival for the smoothest DFW pickup."
+  }
+};
+
+function setAirportInfo(key = "dal") {
+  const info = airportInfoData[key] || airportInfoData.dal;
+  if (byId("airportInstructionTitle")) byId("airportInstructionTitle").textContent = info.title;
+  if (byId("airportInstructionText")) byId("airportInstructionText").textContent = info.text;
+  if (byId("airportTipText")) byId("airportTipText").textContent = info.tip;
+
+  document.querySelectorAll("[data-airport-card]").forEach(card => {
+    card.classList.toggle("active", card.dataset.airportCard === key);
+  });
+}
+
+function initAirportInfo() {
+  document.querySelectorAll("[data-airport-card]").forEach(card => {
+    card.addEventListener("click", () => setAirportInfo(card.dataset.airportCard || "dal"));
+  });
+
+  document.querySelectorAll("[data-airport-action]").forEach(btn => {
+    btn.addEventListener("click", () => setAirportInfo(btn.dataset.airportAction || "dal"));
+  });
+
+  byId("airportBookBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
+  byId("airportBookReturnBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
+
+  setAirportInfo("dal");
+}
+
+
 function initFirebaseSync() {
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
@@ -1410,6 +1456,7 @@ function initTabs() {
     ["youtubeBtn","youtube","YouTube Lounge"],
     ["newsBtn","news","Watch News"],
     ["sportsBtn","sports","Watch Sports"],
+    ["airportBtn","airport","Airport Info"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1475,6 +1522,7 @@ function initSwipe() {
 window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
+  initAirportInfo();
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
