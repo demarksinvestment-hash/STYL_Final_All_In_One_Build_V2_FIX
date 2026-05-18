@@ -84,6 +84,10 @@ let musicPlaylistActive = false;
 let musicPlaylistTimer = null;
 let currentStylPlaylistKey = "executive";
 let requestQueueTimer = null;
+let localAutoQueueEnabled = true;
+let localRequestQueueSeenKeys = new Set();
+let localRequestQueueStarted = false;
+let localRequestsRef = null;
 const requestQueueFallbackSeconds = 240;
 const requestQueueMinSeconds = 75;
 const requestQueueMaxSeconds = 720;
@@ -828,6 +832,101 @@ function resumeMusicPlaylistAfterRequests() {
   }
 }
 
+
+function getLocalRequestKey(item = {}) {
+  return String(item.id || item.createdAt || item.link || `${item.title || ""}|${item.artist || ""}`).trim();
+}
+
+function buildLocalRequestQueueFromFirebase(data = {}) {
+  return Object.entries(data || {})
+    .map(([id, item]) => ({ id, ...(item || {}) }))
+    .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")))
+    .map((item) => {
+      const title = String(item.title || "").trim();
+      const artist = String(item.artist || "").trim();
+      const query = `${title} ${artist}`.trim() || String(item.query || item.label || "").trim();
+      const videoId = extractYouTubeVideoId(item.link || item.videoId || "");
+      const label = `${title || item.label || "Requested song"}${artist ? " — " + artist : ""}`.trim();
+      return {
+        id: item.id,
+        query,
+        videoId,
+        label,
+        createdAt: item.createdAt || ""
+      };
+    })
+    .filter(item => item.query || item.videoId || item.label);
+}
+
+function syncLocalAutoRequestQueue(data = {}) {
+  if (!localAutoQueueEnabled) return;
+
+  const incoming = buildLocalRequestQueueFromFirebase(data);
+  const incomingKeys = new Set(incoming.map(getLocalRequestKey));
+
+  // First load: mark existing requests as known and display them, but do not surprise-start old songs.
+  if (!localRequestQueueStarted) {
+    localRequestQueueStarted = true;
+    localRequestQueueSeenKeys = incomingKeys;
+    if (!requestQueue.length && incoming.length) {
+      requestQueue = normalizeRequestQueue(incoming);
+      requestQueueContinuous = true;
+      requestQueueSignature = queueSignature(requestQueue);
+      renderRequestQueuePanel();
+      setYouTubePanelStatus("Auto request queue ready. New rider requests will play automatically.");
+    }
+    return;
+  }
+
+  const newItems = incoming.filter(item => !localRequestQueueSeenKeys.has(getLocalRequestKey(item)));
+  localRequestQueueSeenKeys = incomingKeys;
+
+  if (!newItems.length) {
+    if (requestQueueContinuous && incoming.length) {
+      const currentKey = requestQueue[requestQueueIndex] ? `${requestQueue[requestQueueIndex].videoId || ""}|${requestQueue[requestQueueIndex].query || ""}|${requestQueue[requestQueueIndex].label || ""}` : "";
+      requestQueue = normalizeRequestQueue(incoming);
+      const keepIndex = requestQueue.findIndex(item => `${item.videoId || ""}|${item.query || ""}|${item.label || ""}` === currentKey);
+      if (keepIndex >= 0) requestQueueIndex = keepIndex;
+      if (requestQueueIndex >= requestQueue.length) requestQueueIndex = Math.max(0, requestQueue.length - 1);
+      requestQueueSignature = queueSignature(requestQueue);
+      renderRequestQueuePanel();
+    }
+    return;
+  }
+
+  requestQueueContinuous = true;
+
+  const existingKeys = new Set(requestQueue.map(item => `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`));
+  const appendItems = normalizeRequestQueue(newItems).filter(item => {
+    const key = `${item.videoId || ""}|${item.query || ""}|${item.label || ""}`;
+    return !existingKeys.has(key);
+  });
+
+  requestQueue = requestQueue.concat(appendItems);
+  requestQueueSignature = queueSignature(requestQueue);
+  renderRequestQueuePanel();
+
+  if (!requestQueueActive) {
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = Math.max(0, requestQueue.length - appendItems.length);
+    requestQueueActive = true;
+    showView("youtube", "YouTube Lounge", "youtubeBtn");
+    setYouTubePanelStatus("New rider request received. Starting auto queue.");
+    setTimeout(playCurrentQueueItem, 350);
+  } else {
+    setYouTubePanelStatus(`New rider request added. Queue now has ${requestQueue.length} songs.`);
+  }
+}
+
+function initLocalAutoRequestQueueEngine(db) {
+  if (!db || localRequestsRef) return;
+  localRequestsRef = ref(db, `${firebasePaths.collection}/musicRequests`);
+  onValue(localRequestsRef, (snap) => {
+    syncLocalAutoRequestQueue(snap.exists() ? (snap.val() || {}) : {});
+  }, (err) => {
+    console.error("Local auto request queue error", err);
+  });
+}
+
 function normalizeRequestQueue(queue = []) {
   return (Array.isArray(queue) ? queue : [])
     .filter(item => item)
@@ -879,34 +978,35 @@ function renderRequestQueuePanel() {
 
 function updateContinuousRequestQueue(queue = []) {
   const nextQueue = normalizeRequestQueue(queue);
-  const nextSignature = queueSignature(nextQueue);
+  requestQueueContinuous = true;
 
   if (!nextQueue.length) {
     requestQueue = [];
     requestQueueIndex = 0;
     requestQueueActive = false;
-    requestQueueContinuous = true;
     requestQueueSignature = "";
     renderRequestQueuePanel();
     setYouTubePanelStatus("Continuous queue is on. Waiting for rider requests.");
     return;
   }
 
-  if (!requestQueueActive || !requestQueue.length) {
-    startRequestQueue(nextQueue, true);
-    return;
-  }
+  const currentKey = requestQueue[requestQueueIndex] ? `${requestQueue[requestQueueIndex].videoId || ""}|${requestQueue[requestQueueIndex].query || ""}|${requestQueue[requestQueueIndex].label || ""}` : "";
+  requestQueue = nextQueue;
+  requestQueueSignature = queueSignature(requestQueue);
+  const keepIndex = requestQueue.findIndex(item => `${item.videoId || ""}|${item.query || ""}|${item.label || ""}` === currentKey);
+  if (keepIndex >= 0) requestQueueIndex = keepIndex;
+  if (requestQueueIndex >= requestQueue.length) requestQueueIndex = Math.max(0, requestQueue.length - 1);
+  renderRequestQueuePanel();
 
-  if (nextSignature !== requestQueueSignature) {
-    requestQueue = nextQueue;
-    requestQueueSignature = nextSignature;
-    requestQueueContinuous = true;
-    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = requestQueue.length - 1;
-    renderRequestQueuePanel();
-    setYouTubePanelStatus(`Queue updated: ${requestQueue.length} requests`);
+  if (!requestQueueActive) {
+    requestQueueActive = true;
+    if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
+    showView("youtube", "YouTube Lounge", "youtubeBtn");
+    setTimeout(playCurrentQueueItem, 350);
+  } else {
+    setYouTubePanelStatus(`Queue updated live: ${requestQueue.length} requests`);
   }
 }
-
 
 function startRequestQueue(queue = [], continuous = false) {
   requestQueue = normalizeRequestQueue(queue);
@@ -924,24 +1024,52 @@ function startRequestQueue(queue = [], continuous = false) {
   pauseMusicPlaylistForRequests();
   showView("youtube", "YouTube Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
-  playCurrentQueueItem();
+  setTimeout(playCurrentQueueItem, 350);
 }
 
-function playCurrentQueueItem() {
+async function resolveRequestQueueVideoId(item = {}) {
+  if (item.videoId) return item.videoId;
+  const q = item.query || item.label || "";
+  const directId = extractYouTubeVideoId(q);
+  if (directId) return directId;
+  return await searchFirstYouTubeVideoId(q);
+}
+
+async function playCurrentQueueItem() {
   if (!requestQueueActive || !requestQueue.length) return;
+  if (requestQueueIndex >= requestQueue.length) {
+    if (requestQueueContinuous) {
+      requestQueueActive = false;
+      renderRequestQueuePanel();
+      setYouTubePanelStatus("Queue finished. Waiting for new rider requests...");
+      return;
+    }
+    requestQueueIndex = 0;
+  }
+
   clearRequestQueueTimer();
   const item = requestQueue[requestQueueIndex] || {};
-  if (item.videoId) {
-    playYouTubePanelVideo(item.videoId);
+  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  setYouTubePanelStatus(`Loading request queue ${requestQueueIndex + 1} of ${requestQueue.length}: ${item.label || item.query || "Requested song"}`);
+
+  const videoId = await resolveRequestQueueVideoId(item);
+  if (videoId) {
+    item.videoId = videoId;
+    playYouTubePanelVideo(videoId);
+    const duration = await getYouTubeVideoDurationSeconds(videoId);
+    startRequestQueueTimer(duration ? Math.max(requestQueueMinSeconds, Math.min(requestQueueMaxSeconds, duration + requestQueuePaddingSeconds)) : requestQueueFallbackSeconds);
   } else {
-    searchYouTubePanel(item.query || item.label || "", true);
+    const frame = getYouTubePanelFrame();
+    if (frame) frame.src = buildYouTubeFallbackUrl(item.query || item.label || "");
+    setYouTubePanelStatus("Could not auto-select this request. Skipping to next soon. Check YouTube API key.");
+    startRequestQueueTimer(45);
   }
-  setYouTubePanelStatus(`Playing request queue ${requestQueueIndex + 1} of ${requestQueue.length}`);
+
   renderRequestQueuePanel();
 }
 
 function playNextQueueItem() {
-  if (!requestQueueActive) return;
+  if (!requestQueueActive && !requestQueueContinuous) return;
   clearRequestQueueTimer();
   requestQueueIndex += 1;
 
@@ -960,6 +1088,7 @@ function playNextQueueItem() {
     return;
   }
 
+  requestQueueActive = true;
   setYouTubePanelStatus(`Next request: ${requestQueueIndex + 1} of ${requestQueue.length}`);
   playCurrentQueueItem();
 }
@@ -1190,6 +1319,7 @@ function initFirebaseSync() {
   const db = getDatabase(app);
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
+  initLocalAutoRequestQueueEngine(db);
   onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Realtime sync error", err);
     applyProfile({});
@@ -1293,3 +1423,5 @@ window.addEventListener("load", () => {
     }
   }, 3500);
 });
+
+console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
