@@ -1392,6 +1392,7 @@ function initTabletHealth(db) {
 
 
 
+
 const airportInfoData = {
   dal: {
     title: "Love Field Airport (DAL)",
@@ -1410,6 +1411,14 @@ const airportInfoData = {
   }
 };
 
+function forceAirportInfoVisible() {
+  if (currentView !== "airport") return;
+  document.querySelectorAll(".view").forEach(view => view.classList.remove("active"));
+  byId("airportView")?.classList.add("active");
+  document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+  byId("airportBtn")?.classList.add("active");
+}
+
 function setAirportInfo(key = "dal") {
   const info = airportInfoData[key] || airportInfoData.dal;
   if (byId("airportInstructionTitle")) byId("airportInstructionTitle").textContent = info.title;
@@ -1422,6 +1431,16 @@ function setAirportInfo(key = "dal") {
 }
 
 function initAirportInfo() {
+  const airportBtn = byId("airportBtn");
+  if (airportBtn && !airportBtn.dataset.airportInit) {
+    airportBtn.dataset.airportInit = "true";
+    airportBtn.addEventListener("click", () => {
+      showView("airport", "Airport Info", "airportBtn");
+      forceAirportInfoVisible();
+      setAirportInfo("dal");
+    });
+  }
+
   document.querySelectorAll("[data-airport-card]").forEach(card => {
     card.addEventListener("click", () => setAirportInfo(card.dataset.airportCard || "dal"));
   });
@@ -1435,6 +1454,7 @@ function initAirportInfo() {
 
   setAirportInfo("dal");
 }
+
 
 
 function initFirebaseSync() {
@@ -1554,3 +1574,5 @@ window.addEventListener("load", () => {
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
 
 console.log("SYSTEM_HEALTH_PANEL_PATCH_3 loaded");
+
+console.log("AIRPORT_INFO_V1B_VISIBILITY_FIX loaded");
