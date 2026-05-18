@@ -96,6 +96,9 @@ let spotifySyncTimer = null;
 let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
+let tabletHealthRef = null;
+let tabletHealthTimer = null;
+let tabletDeviceId = "";
 
 
 async function broadcastRemoteCommand(command, extra = {}) {
@@ -112,11 +115,11 @@ async function broadcastRemoteCommand(command, extra = {}) {
 function applyEndTripUpsellContent() {
   const upsell = config.endTripUpsell || {};
   const headline = upsell.headline || "Thanks for riding with STYL";
-  const body = upsell.body || "Thank you for choosing STYL.";
-  const promo = upsell.promo || "";
+  const body = upsell.body || "Enjoy $15 off your next ride.";
+  const promo = upsell.promo || "SPECIAL10";
   const badge = upsell.badge || "VIP OFFER UNLOCKED";
   const buttonText = upsell.buttonText || "Book Your Next Ride";
-  const buttonLink = upsell.buttonLink || "https://stylblackcar.com/";
+  const buttonLink = upsell.buttonLink || `https://stylblackcar.com/?promo=${encodeURIComponent(promo)}&source=end_trip_offer`;
   const theme = upsell.theme || "gold";
 
   const overlay = byId("endTripOverlay");
@@ -1295,8 +1298,8 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Live News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Sports", "sportsBtn");
+      if (cmd === "news") showView("news", "Watch News", "newsBtn");
+      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
@@ -1315,48 +1318,76 @@ function applyProfile(data = {}) {
 }
 
 
-const airportInfoData = {
-  dal: {
-    title: "Love Field Airport (DAL)",
-    text: "Please meet your chauffeur outside Baggage Claim Door 1.",
-    tip: "For Love Field pickups, Baggage Claim Door 1 is the preferred STYL meeting point."
-  },
-  jsx: {
-    title: "JSX",
-    text: "Please meet your chauffeur outside the baggage claim area.",
-    tip: "JSX pickups are simple and private. Your chauffeur will be ready near the baggage claim area."
-  },
-  dfw: {
-    title: "DFW Airport",
-    text: "Your flight number is required so your chauffeur can track your flight and be ready to meet you outside the baggage claim area of your arrival gate.",
-    tip: "Please provide your airline and flight number before arrival for the smoothest DFW pickup."
+function getTabletDeviceId() {
+  try {
+    const key = "stylTabletDeviceId";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = "tablet-" + Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-4);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch (e) {
+    return "tablet-" + Math.random().toString(36).slice(2, 8);
   }
-};
-
-function setAirportInfo(key = "dal") {
-  const info = airportInfoData[key] || airportInfoData.dal;
-  if (byId("airportInstructionTitle")) byId("airportInstructionTitle").textContent = info.title;
-  if (byId("airportInstructionText")) byId("airportInstructionText").textContent = info.text;
-  if (byId("airportTipText")) byId("airportTipText").textContent = info.tip;
-
-  document.querySelectorAll("[data-airport-card]").forEach(card => {
-    card.classList.toggle("active", card.dataset.airportCard === key);
-  });
 }
 
-function initAirportInfo() {
-  document.querySelectorAll("[data-airport-card]").forEach(card => {
-    card.addEventListener("click", () => setAirportInfo(card.dataset.airportCard || "dal"));
+function getCurrentPlaybackLabel() {
+  if (requestQueueActive && requestQueue[requestQueueIndex]) {
+    return requestQueue[requestQueueIndex].label || requestQueue[requestQueueIndex].query || "Request queue";
+  }
+  if (currentView === "music") return config.musicModes?.[currentMusicMode]?.title || currentMusicMode || "Play Music";
+  if (currentView === "youtube") return "YouTube Lounge";
+  if (currentView === "news") return "News";
+  if (currentView === "sports") return "Sports";
+  return currentView || "home";
+}
+
+async function publishTabletHealth(reason = "heartbeat") {
+  if (!tabletHealthRef) return;
+  const payload = {
+    deviceId: tabletDeviceId,
+    online: true,
+    reason,
+    currentView: currentView || "home",
+    currentMusicMode: currentMusicMode || "",
+    playback: getCurrentPlaybackLabel(),
+    queueActive: !!requestQueueActive,
+    queueContinuous: !!requestQueueContinuous,
+    queueLength: Array.isArray(requestQueue) ? requestQueue.length : 0,
+    queueIndex: Number(requestQueueIndex || 0),
+    tapForSoundReady: !!byId("tapForSoundBtn"),
+    updatedAt: new Date().toISOString(),
+    userAgent: navigator.userAgent || ""
+  };
+
+  try {
+    if (navigator.getBattery) {
+      const battery = await navigator.getBattery();
+      payload.batteryPercent = Math.round((battery.level || 0) * 100);
+      payload.charging = !!battery.charging;
+    }
+  } catch (e) {}
+
+  try {
+    await update(tabletHealthRef, payload);
+  } catch (e) {
+    console.error("Tablet health update failed", e);
+  }
+}
+
+function initTabletHealth(db) {
+  if (!db || tabletHealthRef) return;
+  tabletDeviceId = getTabletDeviceId();
+  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth/${tabletDeviceId}`);
+  publishTabletHealth("startup");
+  if (tabletHealthTimer) clearInterval(tabletHealthTimer);
+  tabletHealthTimer = setInterval(() => publishTabletHealth("heartbeat"), 10000);
+  window.addEventListener("beforeunload", () => {
+    try {
+      update(tabletHealthRef, { online: false, updatedAt: new Date().toISOString(), reason: "unload" });
+    } catch (e) {}
   });
-
-  document.querySelectorAll("[data-airport-action]").forEach(btn => {
-    btn.addEventListener("click", () => setAirportInfo(btn.dataset.airportAction || "dal"));
-  });
-
-  byId("airportBookBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
-  byId("airportBookReturnBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
-
-  setAirportInfo("dal");
 }
 
 
@@ -1365,6 +1396,7 @@ function initFirebaseSync() {
   const db = getDatabase(app);
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
+  initTabletHealth(db);
   initLocalAutoRequestQueueEngine(db);
   onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Realtime sync error", err);
@@ -1376,9 +1408,8 @@ function initTabs() {
   const tabs = [
     ["homeBtn","home","STYL Home"],
     ["youtubeBtn","youtube","YouTube Lounge"],
-    ["newsBtn","news","Live News"],
-    ["sportsBtn","sports","Sports"],
-    ["airportBtn","airport","Airport Info"],
+    ["newsBtn","news","Watch News"],
+    ["sportsBtn","sports","Watch Sports"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1426,8 +1457,8 @@ function initSwipe() {
       const map = {
         home:["STYL Home","homeBtn"],
         youtube:["YouTube Lounge","youtubeBtn"],
-        news:["Live News","newsBtn"],
-        sports:["Sports","sportsBtn"],
+        news:["Watch News","newsBtn"],
+        sports:["Watch Sports","sportsBtn"],
         music:["Play Music","musicBtn"],
         vip:["Join Our VIP","vipBtn"],
         book:["Book Next Ride","bookBtn"]
@@ -1444,7 +1475,6 @@ function initSwipe() {
 window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
-  initAirportInfo();
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
@@ -1456,6 +1486,7 @@ window.addEventListener("load", () => {
   setInterval(requestBrowserWeather, 1800000);
   showView("home", "STYL Home", "homeBtn");
   initFirebaseSync();
+  setTimeout(() => publishTabletHealth("ready"), 1200);
 
   const splash = byId("welcomeSplash");
   if (splash) {
@@ -1474,4 +1505,4 @@ window.addEventListener("load", () => {
 
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
 
-console.log("AIRPORT_CLEANUP_FROM_AUTOQUEUE_BUILD loaded");
+console.log("SYSTEM_HEALTH_PANEL_PATCH_3 loaded");
