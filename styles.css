@@ -1521,3 +1521,13 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     grid-template-columns:1fr !important;
   }
 }
+
+/* LOCAL AUTO REQUEST QUEUE ENGINE V1 */
+#youtubeQueuePanel{
+  display:block;
+}
+
+#youtubeQueuePanel .queue-item.active{
+  border-color:#d4af37 !important;
+  background:rgba(212,175,55,.16) !important;
+}
