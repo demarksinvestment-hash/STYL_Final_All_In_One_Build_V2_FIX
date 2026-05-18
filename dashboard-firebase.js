@@ -96,9 +96,6 @@ let spotifySyncTimer = null;
 let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
-let tabletHealthRef = null;
-let tabletHealthTimer = null;
-let tabletDeviceId = "";
 
 
 async function broadcastRemoteCommand(command, extra = {}) {
@@ -1317,152 +1314,11 @@ function applyProfile(data = {}) {
   }
 }
 
-
-function getTabletDeviceId() {
-  try {
-    const key = "stylTabletDeviceId";
-    let id = localStorage.getItem(key);
-    if (!id) {
-      id = "tablet-" + Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-4);
-      localStorage.setItem(key, id);
-    }
-    return id;
-  } catch (e) {
-    return "tablet-" + Math.random().toString(36).slice(2, 8);
-  }
-}
-
-function getCurrentPlaybackLabel() {
-  if (requestQueueActive && requestQueue[requestQueueIndex]) {
-    return requestQueue[requestQueueIndex].label || requestQueue[requestQueueIndex].query || "Request queue";
-  }
-  if (currentView === "music") return config.musicModes?.[currentMusicMode]?.title || currentMusicMode || "Play Music";
-  if (currentView === "youtube") return "YouTube Lounge";
-  if (currentView === "news") return "News";
-  if (currentView === "sports") return "Sports";
-  return currentView || "home";
-}
-
-async function publishTabletHealth(reason = "heartbeat") {
-  if (!tabletHealthRef) return;
-  const payload = {
-    deviceId: tabletDeviceId,
-    online: true,
-    reason,
-    currentView: currentView || "home",
-    currentMusicMode: currentMusicMode || "",
-    playback: getCurrentPlaybackLabel(),
-    queueActive: !!requestQueueActive,
-    queueContinuous: !!requestQueueContinuous,
-    queueLength: Array.isArray(requestQueue) ? requestQueue.length : 0,
-    queueIndex: Number(requestQueueIndex || 0),
-    tapForSoundReady: !!byId("tapForSoundBtn"),
-    updatedAt: new Date().toISOString(),
-    userAgent: navigator.userAgent || ""
-  };
-
-  try {
-    if (navigator.getBattery) {
-      const battery = await navigator.getBattery();
-      payload.batteryPercent = Math.round((battery.level || 0) * 100);
-      payload.charging = !!battery.charging;
-    }
-  } catch (e) {}
-
-  try {
-    await update(tabletHealthRef, payload);
-  } catch (e) {
-    console.error("Tablet health update failed", e);
-  }
-}
-
-function initTabletHealth(db) {
-  if (!db || tabletHealthRef) return;
-  tabletDeviceId = getTabletDeviceId();
-  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth/${tabletDeviceId}`);
-  publishTabletHealth("startup");
-  if (tabletHealthTimer) clearInterval(tabletHealthTimer);
-  tabletHealthTimer = setInterval(() => publishTabletHealth("heartbeat"), 10000);
-  window.addEventListener("beforeunload", () => {
-    try {
-      update(tabletHealthRef, { online: false, updatedAt: new Date().toISOString(), reason: "unload" });
-    } catch (e) {}
-  });
-}
-
-
-
-
-const airportInfoData = {
-  dal: {
-    title: "Love Field Airport (DAL)",
-    text: "Please meet your chauffeur outside Baggage Claim Door 1.",
-    tip: "For Love Field pickups, Baggage Claim Door 1 is the preferred STYL meeting point."
-  },
-  jsx: {
-    title: "JSX",
-    text: "Please meet your chauffeur outside the baggage claim area.",
-    tip: "JSX pickups are simple and private. Your chauffeur will be ready near the baggage claim area."
-  },
-  dfw: {
-    title: "DFW Airport",
-    text: "Your flight number is required so your chauffeur can track your flight and be ready to meet you outside the baggage claim area of your arrival gate.",
-    tip: "Please provide your airline and flight number before arrival for the smoothest DFW pickup."
-  }
-};
-
-function forceAirportInfoVisible() {
-  if (currentView !== "airport") return;
-  document.querySelectorAll(".view").forEach(view => view.classList.remove("active"));
-  byId("airportView")?.classList.add("active");
-  document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-  byId("airportBtn")?.classList.add("active");
-}
-
-function setAirportInfo(key = "dal") {
-  const info = airportInfoData[key] || airportInfoData.dal;
-  if (byId("airportInstructionTitle")) byId("airportInstructionTitle").textContent = info.title;
-  if (byId("airportInstructionText")) byId("airportInstructionText").textContent = info.text;
-  if (byId("airportTipText")) byId("airportTipText").textContent = info.tip;
-
-  document.querySelectorAll("[data-airport-card]").forEach(card => {
-    card.classList.toggle("active", card.dataset.airportCard === key);
-  });
-}
-
-function initAirportInfo() {
-  const airportBtn = byId("airportBtn");
-  if (airportBtn && !airportBtn.dataset.airportInit) {
-    airportBtn.dataset.airportInit = "true";
-    airportBtn.addEventListener("click", () => {
-      showView("airport", "Airport Info", "airportBtn");
-      forceAirportInfoVisible();
-      setAirportInfo("dal");
-    });
-  }
-
-  document.querySelectorAll("[data-airport-card]").forEach(card => {
-    card.addEventListener("click", () => setAirportInfo(card.dataset.airportCard || "dal"));
-  });
-
-  document.querySelectorAll("[data-airport-action]").forEach(btn => {
-    btn.addEventListener("click", () => setAirportInfo(btn.dataset.airportAction || "dal"));
-  });
-
-  byId("airportBookBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
-  byId("airportBookReturnBtn")?.addEventListener("click", () => showView("book", "Book Next Ride", "bookBtn"));
-
-  setAirportInfo("dal");
-}
-
-
-
 function initFirebaseSync() {
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
-  initTabletHealth(db);
   initLocalAutoRequestQueueEngine(db);
   onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Realtime sync error", err);
@@ -1476,7 +1332,6 @@ function initTabs() {
     ["youtubeBtn","youtube","YouTube Lounge"],
     ["newsBtn","news","Watch News"],
     ["sportsBtn","sports","Watch Sports"],
-    ["airportBtn","airport","Airport Info"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1542,7 +1397,6 @@ function initSwipe() {
 window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
-  initAirportInfo();
   initYouTubeSearchPanel();
   initCinematicMode();
   initTapForSoundOverlay();
@@ -1554,7 +1408,6 @@ window.addEventListener("load", () => {
   setInterval(requestBrowserWeather, 1800000);
   showView("home", "STYL Home", "homeBtn");
   initFirebaseSync();
-  setTimeout(() => publishTabletHealth("ready"), 1200);
 
   const splash = byId("welcomeSplash");
   if (splash) {
@@ -1572,7 +1425,3 @@ window.addEventListener("load", () => {
 });
 
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
-
-console.log("SYSTEM_HEALTH_PANEL_PATCH_3 loaded");
-
-console.log("AIRPORT_INFO_V1B_VISIBILITY_FIX loaded");
