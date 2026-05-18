@@ -96,6 +96,9 @@ let spotifySyncTimer = null;
 let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
+let tabletHealthRef = null;
+let tabletHealthTimer = null;
+let tabletDeviceId = "";
 
 
 async function broadcastRemoteCommand(command, extra = {}) {
@@ -1314,11 +1317,86 @@ function applyProfile(data = {}) {
   }
 }
 
+
+function getTabletDeviceId() {
+  try {
+    const key = "stylTabletDeviceId";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = "tablet-" + Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-4);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch (e) {
+    return "tablet-" + Math.random().toString(36).slice(2, 8);
+  }
+}
+
+function getCurrentPlaybackLabel() {
+  if (requestQueueActive && requestQueue[requestQueueIndex]) {
+    return requestQueue[requestQueueIndex].label || requestQueue[requestQueueIndex].query || "Request queue";
+  }
+  if (currentView === "music") return config.musicModes?.[currentMusicMode]?.title || currentMusicMode || "Play Music";
+  if (currentView === "youtube") return "YouTube Lounge";
+  if (currentView === "news") return "News";
+  if (currentView === "sports") return "Sports";
+  return currentView || "home";
+}
+
+async function publishTabletHealth(reason = "heartbeat") {
+  if (!tabletHealthRef) return;
+  const payload = {
+    deviceId: tabletDeviceId,
+    online: true,
+    reason,
+    currentView: currentView || "home",
+    currentMusicMode: currentMusicMode || "",
+    playback: getCurrentPlaybackLabel(),
+    queueActive: !!requestQueueActive,
+    queueContinuous: !!requestQueueContinuous,
+    queueLength: Array.isArray(requestQueue) ? requestQueue.length : 0,
+    queueIndex: Number(requestQueueIndex || 0),
+    tapForSoundReady: !!byId("tapForSoundBtn"),
+    updatedAt: new Date().toISOString(),
+    userAgent: navigator.userAgent || ""
+  };
+
+  try {
+    if (navigator.getBattery) {
+      const battery = await navigator.getBattery();
+      payload.batteryPercent = Math.round((battery.level || 0) * 100);
+      payload.charging = !!battery.charging;
+    }
+  } catch (e) {}
+
+  try {
+    await update(tabletHealthRef, payload);
+  } catch (e) {
+    console.error("Tablet health update failed", e);
+  }
+}
+
+function initTabletHealth(db) {
+  if (!db || tabletHealthRef) return;
+  tabletDeviceId = getTabletDeviceId();
+  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth/${tabletDeviceId}`);
+  publishTabletHealth("startup");
+  if (tabletHealthTimer) clearInterval(tabletHealthTimer);
+  tabletHealthTimer = setInterval(() => publishTabletHealth("heartbeat"), 10000);
+  window.addEventListener("beforeunload", () => {
+    try {
+      update(tabletHealthRef, { online: false, updatedAt: new Date().toISOString(), reason: "unload" });
+    } catch (e) {}
+  });
+}
+
+
 function initFirebaseSync() {
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
+  initTabletHealth(db);
   initLocalAutoRequestQueueEngine(db);
   onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Realtime sync error", err);
@@ -1408,6 +1486,7 @@ window.addEventListener("load", () => {
   setInterval(requestBrowserWeather, 1800000);
   showView("home", "STYL Home", "homeBtn");
   initFirebaseSync();
+  setTimeout(() => publishTabletHealth("ready"), 1200);
 
   const splash = byId("welcomeSplash");
   if (splash) {
@@ -1425,3 +1504,5 @@ window.addEventListener("load", () => {
 });
 
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
+
+console.log("SYSTEM_HEALTH_PANEL_PATCH_3 loaded");
