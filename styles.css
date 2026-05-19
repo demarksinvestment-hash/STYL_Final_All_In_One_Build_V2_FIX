@@ -1532,15 +1532,103 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   background:rgba(212,175,55,.16) !important;
 }
 
-/* HTML CSS ONLY AIRPORT CLEANUP */
-.top-tabs{gap:5px!important;flex-wrap:nowrap!important}
-.top-tabs .tab-btn,.tab-btn{padding:7px 8px!important;min-height:40px!important;font-size:.78rem!important;border-radius:12px!important;white-space:nowrap!important;flex:1 1 0!important;min-width:0!important}
-.tab-icon{font-size:.92rem!important}.tab-text{font-size:.7rem!important;line-height:1.05!important}
-#airportView.view.active,#airportView.active{display:block!important;visibility:visible!important;opacity:1!important}
-.airport-info-system{display:flex!important;flex-direction:column;gap:16px;height:100%;overflow:auto;padding-bottom:10px}
-.airport-hero-card{display:flex;justify-content:space-between;gap:16px;align-items:center;border:1px solid rgba(212,175,55,.35);border-radius:22px;padding:18px;background:linear-gradient(135deg,rgba(212,175,55,.14),rgba(0,0,0,.52))}
-.airport-kicker{color:#f5d98a;text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:900}.airport-hero-card h2{margin:6px 0;font-size:2rem;color:#fff}.airport-hero-card p{margin:0;color:#f5d98a}
-.airport-return-btn,.airport-action-btn{border:1px solid rgba(212,175,55,.45);border-radius:14px;background:linear-gradient(135deg,#d4af37,#f5d98a);color:#080808;font-weight:1000;padding:12px 14px;cursor:pointer}
-.airport-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.airport-card{min-height:116px;border:1px solid rgba(212,175,55,.28);border-radius:18px;background:rgba(0,0,0,.42);color:#fff;text-align:left;padding:16px;cursor:pointer}.airport-card.active{border-color:#d4af37;background:rgba(212,175,55,.16)}.airport-card span{display:inline-flex;color:#080808;background:#d4af37;border-radius:999px;padding:4px 10px;font-weight:1000}.airport-card strong{display:block;margin-top:10px;font-size:1.1rem}.airport-card small{display:block;margin-top:4px;color:#f5d98a}
-.airport-details-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,.7fr);gap:14px}.airport-instruction-panel,.airport-action-panel{border:1px solid rgba(212,175,55,.28);border-radius:20px;background:rgba(0,0,0,.45);padding:18px}.airport-section-title{color:#d4af37;font-weight:1000;text-transform:uppercase;letter-spacing:.08em;font-size:.8rem;margin-bottom:10px}.airport-instruction-title{color:#fff;font-size:1.35rem;font-weight:1000;margin-bottom:8px}.airport-instruction-text{color:#fff;font-size:1.05rem;line-height:1.5}.airport-note-box{margin-top:14px;border-radius:16px;border:1px solid rgba(212,175,55,.25);background:rgba(212,175,55,.10);padding:12px}.airport-note-box strong{display:block;color:#d4af37;margin-bottom:4px}.airport-note-box span{color:#f5d98a}.airport-action-panel{display:flex;flex-direction:column;gap:10px}.airport-action-btn{width:100%;text-align:center}
-@media(max-width:900px){.top-tabs .tab-btn,.tab-btn{padding:6px 5px!important}.tab-icon{font-size:.85rem!important}.tab-text{font-size:.64rem!important}.airport-card-grid,.airport-details-layout{grid-template-columns:1fr}.airport-hero-card{flex-direction:column;align-items:flex-start}}
+/* PATCH 3 SYSTEM HEALTH PANEL */
+.health-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:10px;
+  margin:10px 0 12px;
+}
+
+.health-stat{
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:14px;
+  background:rgba(255,255,255,.04);
+  padding:10px;
+  text-align:center;
+}
+
+.health-stat span{
+  display:block;
+  color:#f5d98a;
+  font-size:.78rem;
+  margin-bottom:5px;
+}
+
+.health-stat strong{
+  color:#fff;
+  font-size:1rem;
+}
+
+.tablet-health-panel{
+  display:grid;
+  gap:10px;
+}
+
+.health-empty{
+  color:#f5d98a;
+  border:1px dashed rgba(212,175,55,.35);
+  border-radius:14px;
+  padding:12px;
+  text-align:center;
+}
+
+.tablet-health-card{
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:16px;
+  background:rgba(0,0,0,.36);
+  padding:12px;
+}
+
+.tablet-health-card.online{
+  border-color:rgba(80,255,160,.55);
+  box-shadow:0 0 0 1px rgba(80,255,160,.08);
+}
+
+.tablet-health-card.offline{
+  opacity:.72;
+  border-color:rgba(255,120,120,.38);
+}
+
+.tablet-health-top,
+.tablet-health-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+
+.tablet-health-top{
+  margin-bottom:8px;
+}
+
+.tablet-health-top strong{
+  color:#d4af37;
+}
+
+.tablet-health-top span,
+.tablet-health-row span{
+  color:#f5d98a;
+  font-size:.8rem;
+}
+
+.tablet-health-row{
+  padding:5px 0;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+
+.tablet-health-row b{
+  color:#fff;
+  text-align:right;
+  font-size:.82rem;
+  max-width:58%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media(max-width:700px){
+  .health-summary-grid{
+    grid-template-columns:1fr;
+  }
+}
