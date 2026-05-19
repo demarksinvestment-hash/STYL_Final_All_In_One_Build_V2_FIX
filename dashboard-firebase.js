@@ -1541,3 +1541,49 @@ window.addEventListener("load", () => {
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
 
 console.log("LIVE_NEWS_SPORTS_AUTOFINDER_V1 loaded");
+
+/* STYL TABLET HEALTH HEARTBEAT RESTORE V1 /
+/ ---------- Tablet Health Heartbeat Restore ---------- /
+const stylTabletId =
+  localStorage.getItem("stylTabletId") ||
+  tablet-${Math.random().toString(36).slice(2,10)};
+localStorage.setItem("stylTabletId", stylTabletId);
+async function sendTabletHeartbeat() {
+  try {
+    if (!window.firebaseDB || !window.firebaseSet || !window.firebaseRef) {
+      return;
+    }
+    const payload = {
+      deviceId: stylTabletId,
+      online: true,
+      lastSync: Date.now(),
+      currentView:
+        (typeof currentView !== "undefined" && currentView) || "home",
+      queueCount:
+        (Array.isArray(window.requestQueue) && window.requestQueue.length) || 0,
+      battery:
+        typeof window.lastBatteryLevel !== "undefined"
+          ? window.lastBatteryLevel
+          : null,
+      nowPlaying:
+        document.title || "STYL Dashboard"
+    };
+    await window.firebaseSet(
+      window.firebaseRef(window.firebaseDB, stylTabletHealth/${stylTabletId}),
+      payload
+    );
+    console.log("STYL tablet heartbeat sent");
+  } catch (err) {
+    console.warn("Heartbeat failed", err);
+  }
+}
+/ Start heartbeat /
+setTimeout(() => {
+  sendTabletHeartbeat();
+  setInterval(() => {
+    sendTabletHeartbeat();
+  }, 15000);
+}, 3000);
+/ ---------- End Tablet Health Heartbeat Restore ---------- */
+
+
