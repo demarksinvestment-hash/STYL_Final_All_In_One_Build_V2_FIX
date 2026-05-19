@@ -96,9 +96,6 @@ let spotifySyncTimer = null;
 let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
-let tabletHealthRef = null;
-let tabletHealthTimer = null;
-let tabletDeviceId = "";
 
 
 async function broadcastRemoteCommand(command, extra = {}) {
@@ -235,6 +232,118 @@ function resolveSportsUrl() {
   return (config.sportsLiveOverride || "").trim() || config.sportsUrl;
 }
 
+const liveMediaCache = {
+  news: { videoId: "", ts: 0 },
+  sports: { videoId: "", ts: 0 }
+};
+
+const liveMediaQueries = {
+  news: [
+    "ABC News Live",
+    "NBC News NOW Live",
+    "CBS News Live",
+    "Bloomberg Live",
+    "Fox Weather Live",
+    "WFAA Dallas Live"
+  ],
+  sports: [
+    "CBS Sports HQ live",
+    "sports news live",
+    "ESPN sports news live",
+    "Fox Sports live",
+    "live sports highlights",
+    "NBA news live"
+  ]
+};
+
+function getLiveMediaFallback(kind) {
+  return kind === "sports" ? resolveSportsUrl() : resolveNewsUrl();
+}
+
+function getLiveMediaCacheKey(kind) {
+  return `stylLiveMedia_${kind}`;
+}
+
+function readStoredLiveMedia(kind) {
+  try {
+    const raw = localStorage.getItem(getLiveMediaCacheKey(kind));
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data?.videoId || !data?.ts) return null;
+    if (Date.now() - Number(data.ts) > 6 * 60 * 1000) return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeLiveMedia(kind, videoId) {
+  const data = { videoId, ts: Date.now() };
+  liveMediaCache[kind] = data;
+  try {
+    localStorage.setItem(getLiveMediaCacheKey(kind), JSON.stringify(data));
+  } catch (e) {}
+  return data;
+}
+
+async function findLiveMediaVideoId(kind = "news") {
+  const cached = liveMediaCache[kind];
+  if (cached?.videoId && Date.now() - cached.ts < 6 * 60 * 1000) return cached.videoId;
+
+  const stored = readStoredLiveMedia(kind);
+  if (stored?.videoId) {
+    liveMediaCache[kind] = stored;
+    return stored.videoId;
+  }
+
+  if (!config.youtubeApiKey) return "";
+
+  const queries = liveMediaQueries[kind] || liveMediaQueries.news;
+
+  for (const query of queries) {
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=1&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const json = await res.json();
+      const videoId = json.items?.[0]?.id?.videoId || "";
+      if (videoId) {
+        storeLiveMedia(kind, videoId);
+        return videoId;
+      }
+    } catch (e) {
+      console.warn("Live media search failed", kind, query, e);
+    }
+  }
+
+  return "";
+}
+
+async function loadLiveMediaFrame(kind = "news") {
+  const frame = byId(kind === "sports" ? "sportsFrame" : "newsFrame");
+  if (!frame) return;
+
+  const fallback = getLiveMediaFallback(kind);
+
+  // Respect admin manual override first.
+  if (kind === "news" && (config.newsLiveOverride || "").trim()) {
+    frame.src = forceAutoplay(resolveNewsUrl());
+    return;
+  }
+  if (kind === "sports" && (config.sportsLiveOverride || "").trim()) {
+    frame.src = forceAutoplay(resolveSportsUrl());
+    return;
+  }
+
+  const videoId = await findLiveMediaVideoId(kind);
+  if (videoId) {
+    frame.src = buildYouTubeVideoUrl(videoId);
+  } else {
+    frame.src = forceAutoplay(fallback);
+  }
+}
+
+
 function updateMediaMode(name) {
   const frame = document.querySelector(".frame");
   if (!frame) return;
@@ -257,11 +366,13 @@ function afterViewAudioKick(name) {
   } else if (name === "news") {
     const f = byId("newsFrame");
     if (f) f.src = forceAutoplay(resolveNewsUrl());
+    loadLiveMediaFrame("news");
     tryAutoSound("newsFrame");
     showActiveSoundOverlay();
   } else if (name === "sports") {
     const f = byId("sportsFrame");
     if (f) f.src = forceAutoplay(resolveSportsUrl());
+    loadLiveMediaFrame("sports");
     tryAutoSound("sportsFrame");
     showActiveSoundOverlay();
   } else if (name === "music") {
@@ -1317,86 +1428,11 @@ function applyProfile(data = {}) {
   }
 }
 
-
-function getTabletDeviceId() {
-  try {
-    const key = "stylTabletDeviceId";
-    let id = localStorage.getItem(key);
-    if (!id) {
-      id = "tablet-" + Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36).slice(-4);
-      localStorage.setItem(key, id);
-    }
-    return id;
-  } catch (e) {
-    return "tablet-" + Math.random().toString(36).slice(2, 8);
-  }
-}
-
-function getCurrentPlaybackLabel() {
-  if (requestQueueActive && requestQueue[requestQueueIndex]) {
-    return requestQueue[requestQueueIndex].label || requestQueue[requestQueueIndex].query || "Request queue";
-  }
-  if (currentView === "music") return config.musicModes?.[currentMusicMode]?.title || currentMusicMode || "Play Music";
-  if (currentView === "youtube") return "YouTube Lounge";
-  if (currentView === "news") return "News";
-  if (currentView === "sports") return "Sports";
-  return currentView || "home";
-}
-
-async function publishTabletHealth(reason = "heartbeat") {
-  if (!tabletHealthRef) return;
-  const payload = {
-    deviceId: tabletDeviceId,
-    online: true,
-    reason,
-    currentView: currentView || "home",
-    currentMusicMode: currentMusicMode || "",
-    playback: getCurrentPlaybackLabel(),
-    queueActive: !!requestQueueActive,
-    queueContinuous: !!requestQueueContinuous,
-    queueLength: Array.isArray(requestQueue) ? requestQueue.length : 0,
-    queueIndex: Number(requestQueueIndex || 0),
-    tapForSoundReady: !!byId("tapForSoundBtn"),
-    updatedAt: new Date().toISOString(),
-    userAgent: navigator.userAgent || ""
-  };
-
-  try {
-    if (navigator.getBattery) {
-      const battery = await navigator.getBattery();
-      payload.batteryPercent = Math.round((battery.level || 0) * 100);
-      payload.charging = !!battery.charging;
-    }
-  } catch (e) {}
-
-  try {
-    await update(tabletHealthRef, payload);
-  } catch (e) {
-    console.error("Tablet health update failed", e);
-  }
-}
-
-function initTabletHealth(db) {
-  if (!db || tabletHealthRef) return;
-  tabletDeviceId = getTabletDeviceId();
-  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth/${tabletDeviceId}`);
-  publishTabletHealth("startup");
-  if (tabletHealthTimer) clearInterval(tabletHealthTimer);
-  tabletHealthTimer = setInterval(() => publishTabletHealth("heartbeat"), 10000);
-  window.addEventListener("beforeunload", () => {
-    try {
-      update(tabletHealthRef, { online: false, updatedAt: new Date().toISOString(), reason: "unload" });
-    } catch (e) {}
-  });
-}
-
-
 function initFirebaseSync() {
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
-  initTabletHealth(db);
   initLocalAutoRequestQueueEngine(db);
   onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
     console.error("Realtime sync error", err);
@@ -1486,7 +1522,6 @@ window.addEventListener("load", () => {
   setInterval(requestBrowserWeather, 1800000);
   showView("home", "STYL Home", "homeBtn");
   initFirebaseSync();
-  setTimeout(() => publishTabletHealth("ready"), 1200);
 
   const splash = byId("welcomeSplash");
   if (splash) {
@@ -1505,4 +1540,4 @@ window.addEventListener("load", () => {
 
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
 
-console.log("SYSTEM_HEALTH_PANEL_PATCH_3 loaded");
+console.log("LIVE_NEWS_SPORTS_AUTOFINDER_V1 loaded");
