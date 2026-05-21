@@ -23,6 +23,24 @@ const config = {
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
   youtubeApiKey: "",
+  liveTvChannels: {
+    news: [
+      { label: "ABC News Live", query: "ABC News Live" },
+      { label: "NBC News NOW", query: "NBC News NOW Live" },
+      { label: "CBS News Live", query: "CBS News Live" },
+      { label: "Bloomberg Live", query: "Bloomberg Live" },
+      { label: "Fox Weather", query: "Fox Weather Live" },
+      { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+    ],
+    sports: [
+      { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
+      { label: "Sports News Live", query: "sports news live" },
+      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+      { label: "Fox Sports", query: "Fox Sports live" },
+      { label: "Live Highlights", query: "live sports highlights" },
+      { label: "NBA News Live", query: "NBA news live" }
+    ]
+  },
   youtubePanelQuery: "",
   youtubePanelVideoId: "",
   requestQueue: [],
@@ -255,6 +273,89 @@ const liveMediaQueries = {
     "NBA news live"
   ]
 };
+
+
+const fallbackLiveTvChannels = {
+  news: [
+    { label: "ABC News Live", query: "ABC News Live" },
+    { label: "NBC News NOW", query: "NBC News NOW Live" },
+    { label: "CBS News Live", query: "CBS News Live" },
+    { label: "Bloomberg Live", query: "Bloomberg Live" },
+    { label: "Fox Weather", query: "Fox Weather Live" },
+    { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+  ],
+  sports: [
+    { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
+    { label: "Sports News Live", query: "sports news live" },
+    { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+    { label: "Fox Sports", query: "Fox Sports live" },
+    { label: "Live Highlights", query: "live sports highlights" },
+    { label: "NBA News Live", query: "NBA news live" }
+  ]
+};
+
+async function findLiveMediaVideoIdByQuery(query = "") {
+  if (!config.youtubeApiKey || !query) return "";
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=1&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const res = await fetch(url);
+    if (!res.ok) return "";
+    const json = await res.json();
+    return json.items?.[0]?.id?.videoId || "";
+  } catch (e) {
+    console.warn("Live channel lookup failed", query, e);
+    return "";
+  }
+}
+
+async function loadLiveTvChannel(kind = "news", query = "", label = "") {
+  const frame = byId(kind === "sports" ? "sportsFrame" : "newsFrame");
+  if (!frame) return;
+  const statusLabel = label || query || (kind === "sports" ? "Sports" : "News");
+  const videoId = await findLiveMediaVideoIdByQuery(query);
+
+  if (videoId) {
+    if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
+    frame.src = buildYouTubeVideoUrl(videoId);
+  } else {
+    frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : (kind === "sports" ? resolveSportsUrl() : resolveNewsUrl()));
+  }
+
+  const title = byId("panelTitle");
+  const subtitle = byId("panelSubtitle");
+  if (title) title.textContent = kind === "sports" ? "Live Sports" : "Live News";
+  if (subtitle) subtitle.textContent = videoId ? `Now playing: ${statusLabel}` : `Could not find active live stream for ${statusLabel}. Showing fallback.`;
+
+  tryAutoSound(kind === "sports" ? "sportsFrame" : "newsFrame");
+  showActiveSoundOverlay();
+}
+
+function renderLiveTvChannelGrid(kind = "news") {
+  const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
+  if (!grid) return;
+  const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
+  grid.innerHTML = channels.map((channel) => `
+    <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
+      <span>${kind === "sports" ? "🏈" : "📺"}</span>
+      <strong>${channel.label}</strong>
+      <small>Tap to watch live</small>
+    </button>
+  `).join("");
+
+  grid.querySelectorAll(".live-channel-card").forEach(btn => {
+    btn.addEventListener("click", () => {
+      grid.querySelectorAll(".live-channel-card").forEach(card => card.classList.remove("active"));
+      btn.classList.add("active");
+      loadLiveTvChannel(btn.dataset.kind || kind, btn.dataset.query || "", btn.dataset.label || "");
+    });
+  });
+}
+
+function initLiveTvChannelGrids() {
+  renderLiveTvChannelGrid("news");
+  renderLiveTvChannelGrid("sports");
+}
+
 
 function getLiveMediaFallback(kind) {
   return kind === "sports" ? resolveSportsUrl() : resolveNewsUrl();
@@ -1384,6 +1485,7 @@ async function requestBrowserWeather() {
 function applyProfile(data = {}) {
   Object.assign(config, data || {});
   refreshMusicModeUrls();
+  if (typeof initLiveTvChannelGrids === "function") initLiveTvChannelGrids();
 
   if (byId("chauffeurName")) byId("chauffeurName").textContent = config.chauffeurName || "Ayo";
   if (byId("vehicleName")) byId("vehicleName").textContent = config.vehicleName || "Chevrolet Suburban";
@@ -1409,8 +1511,8 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Watch News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Watch Sports", "sportsBtn");
+      if (cmd === "news") showView("news", "Live News", "newsBtn");
+      else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
@@ -1444,8 +1546,8 @@ function initTabs() {
   const tabs = [
     ["homeBtn","home","STYL Home"],
     ["youtubeBtn","youtube","YouTube Lounge"],
-    ["newsBtn","news","Watch News"],
-    ["sportsBtn","sports","Watch Sports"],
+    ["newsBtn","news","Live News"],
+    ["sportsBtn","sports","Live Sports"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1493,8 +1595,8 @@ function initSwipe() {
       const map = {
         home:["STYL Home","homeBtn"],
         youtube:["YouTube Lounge","youtubeBtn"],
-        news:["Watch News","newsBtn"],
-        sports:["Watch Sports","sportsBtn"],
+        news:["Live News","newsBtn"],
+        sports:["Live Sports","sportsBtn"],
         music:["Play Music","musicBtn"],
         vip:["Join Our VIP","vipBtn"],
         book:["Book Next Ride","bookBtn"]
@@ -1512,6 +1614,7 @@ window.addEventListener("load", () => {
   refreshMusicModeUrls();
   initTabs();
   initYouTubeSearchPanel();
+  initLiveTvChannelGrids();
   initCinematicMode();
   initTapForSoundOverlay();
   initYouTubeQueueListener();
@@ -1541,3 +1644,7 @@ window.addEventListener("load", () => {
 console.log("LOCAL_AUTO_REQUEST_QUEUE_ENGINE_V1 loaded");
 
 console.log("LIVE_NEWS_SPORTS_AUTOFINDER_V1 loaded");
+
+console.log("LIVE_TV_CHANNEL_GRID_V1 loaded");
+
+console.log("LIVE_TV_CHANNEL_GRID_ADMIN_CONTROL_V1 loaded");
