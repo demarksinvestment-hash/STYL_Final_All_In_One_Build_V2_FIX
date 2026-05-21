@@ -7,8 +7,6 @@ let db = null;
 let liveDoc = null;
 let requestsRef = null;
 let bookingClicksRef = null;
-let tabletHealthRef = null;
-let currentTabletHealthData = {};
 let currentBookingClicksData = {};
 let currentRequestItems = [];
 let continuousQueueEnabled = false;
@@ -21,6 +19,64 @@ const defaults = {
 function setStatus(text) {
   if (byId("liveStatus")) byId("liveStatus").textContent = text;
 }
+
+
+function defaultLiveTvChannels() {
+  return {
+    news: [
+      { label: "ABC News Live", query: "ABC News Live" },
+      { label: "NBC News NOW", query: "NBC News NOW Live" },
+      { label: "CBS News Live", query: "CBS News Live" },
+      { label: "Bloomberg Live", query: "Bloomberg Live" },
+      { label: "Fox Weather", query: "Fox Weather Live" },
+      { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+    ],
+    sports: [
+      { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
+      { label: "Sports News Live", query: "sports news live" },
+      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+      { label: "Fox Sports", query: "Fox Sports live" },
+      { label: "Live Highlights", query: "live sports highlights" },
+      { label: "NBA News Live", query: "NBA news live" }
+    ]
+  };
+}
+
+function parseChannelLines(value = "") {
+  return String(value || "")
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const parts = line.split("|").map(part => part.trim()).filter(Boolean);
+      return { label: parts[0] || line, query: parts[1] || parts[0] || line };
+    })
+    .filter(item => item.label && item.query);
+}
+
+function channelsToText(channels = []) {
+  return (Array.isArray(channels) ? channels : [])
+    .map(item => `${item.label || ""} | ${item.query || item.label || ""}`.trim())
+    .filter(line => line !== "|")
+    .join("\n");
+}
+
+function getLiveTvChannelsFromAdmin() {
+  const defaults = defaultLiveTvChannels();
+  return {
+    news: parseChannelLines(byId("liveNewsChannelsText")?.value || channelsToText(defaults.news)),
+    sports: parseChannelLines(byId("liveSportsChannelsText")?.value || channelsToText(defaults.sports))
+  };
+}
+
+async function saveLiveTvChannels() {
+  const payload = buildProfile();
+  payload.liveTvChannels = getLiveTvChannelsFromAdmin();
+  payload.youtubeApiKey = byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "";
+  if (byId("youtubeApiKey")) byId("youtubeApiKey").value = payload.youtubeApiKey;
+  await savePayload(payload, "Live TV channels saved");
+}
+
 
 function buildProfile() {
   return {
@@ -39,7 +95,8 @@ function buildProfile() {
     rnb80sMusicUrl: byId("rnb80sMusicUrl")?.value.trim() || "https://www.youtube.com/embed/3Fm8tKhqYx0?enablejsapi=1&rel=0",
     afrobeatsMusicUrl: byId("afrobeatsMusicUrl")?.value.trim() || "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
     spotifyMusicUrl: byId("spotifyMusicUrl")?.value.trim() || "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
-    youtubeApiKey: byId("youtubeApiKey")?.value.trim() || "",
+    youtubeApiKey: byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "",
+    liveTvChannels: getLiveTvChannelsFromAdmin(),
     spotifyRiderUrl: byId("spotifyRiderUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
     musicRequestUrl: byId("musicRequestUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
     spotifySyncEnabled: (byId("spotifySyncEnabled")?.value || "true") === "true",
@@ -140,89 +197,6 @@ function extractYouTubeVideoId(value) {
   }
   return "";
 }
-
-
-function formatHealthAge(iso) {
-  if (!iso) return "Never";
-  const ms = Date.now() - new Date(iso).getTime();
-  if (!Number.isFinite(ms)) return "Unknown";
-  const sec = Math.max(0, Math.round(ms / 1000));
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  return `${Math.round(min / 60)}h ago`;
-}
-
-function renderTabletHealth(data = {}) {
-  currentTabletHealthData = data || {};
-  const panel = byId("tabletHealthPanel");
-  const onlineCountEl = byId("healthOnlineCount");
-  const queueStatusEl = byId("healthQueueStatus");
-  const lastSyncEl = byId("healthLastSync");
-
-  const now = Date.now();
-  const tablets = Object.entries(data || {})
-    .map(([id, item]) => ({ id, ...(item || {}) }))
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-
-  const online = tablets.filter(t => {
-    const age = now - new Date(t.updatedAt || 0).getTime();
-    return Number.isFinite(age) && age <= 25000;
-  });
-
-  if (onlineCountEl) onlineCountEl.textContent = `${online.length}/${tablets.length || 0}`;
-
-  const anyQueue = tablets.find(t => t.queueActive || t.queueContinuous || Number(t.queueLength || 0) > 0);
-  if (queueStatusEl) {
-    queueStatusEl.textContent = anyQueue
-      ? `${anyQueue.queueActive ? "Playing" : "Ready"} • ${Number(anyQueue.queueLength || 0)}`
-      : "Idle";
-  }
-
-  if (lastSyncEl) {
-    const newest = tablets[0]?.updatedAt || "";
-    lastSyncEl.textContent = formatHealthAge(newest);
-  }
-
-  if (!panel) return;
-
-  if (!tablets.length) {
-    panel.innerHTML = `<div class="health-empty">Waiting for tablets to report online...</div>`;
-    return;
-  }
-
-  panel.innerHTML = tablets.map(t => {
-    const age = now - new Date(t.updatedAt || 0).getTime();
-    const isOnline = Number.isFinite(age) && age <= 25000;
-    const battery = Number.isFinite(Number(t.batteryPercent)) ? `${t.batteryPercent}%${t.charging ? " ⚡" : ""}` : "N/A";
-    const queue = Number(t.queueLength || 0);
-    const view = String(t.currentView || "home");
-    const playback = String(t.playback || view);
-    return `<div class="tablet-health-card ${isOnline ? "online" : "offline"}">
-      <div class="tablet-health-top">
-        <strong>${isOnline ? "Online" : "Offline"}</strong>
-        <span>${formatHealthAge(t.updatedAt)}</span>
-      </div>
-      <div class="tablet-health-row"><span>Device</span><b>${escapeHtml(t.id || t.deviceId || "Tablet")}</b></div>
-      <div class="tablet-health-row"><span>View</span><b>${escapeHtml(view)}</b></div>
-      <div class="tablet-health-row"><span>Playing</span><b>${escapeHtml(playback)}</b></div>
-      <div class="tablet-health-row"><span>Queue</span><b>${t.queueActive ? "Playing" : (t.queueContinuous ? "Ready" : "Idle")} • ${queue}</b></div>
-      <div class="tablet-health-row"><span>Battery</span><b>${escapeHtml(battery)}</b></div>
-    </div>`;
-  }).join("");
-}
-
-function listenForTabletHealth() {
-  if (!db || tabletHealthRef) return;
-  tabletHealthRef = ref(db, `${firebasePaths.collection}/tabletHealth`);
-  onValue(tabletHealthRef, (snap) => {
-    renderTabletHealth(snap.exists() ? (snap.val() || {}) : {});
-  }, (err) => {
-    console.error("Tablet health sync error", err);
-  });
-  setInterval(() => renderTabletHealth(currentTabletHealthData), 5000);
-}
-
 
 function renderRequests(data = {}) {
   const list = byId("requestsList");
@@ -420,7 +394,6 @@ async function loadLiveProfile() {
   db = getDatabase(app);
   liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   listenForRequests();
-  listenForTabletHealth();
   listenForBookingClicks();
 
   onValue(liveDoc, (snap) => {
@@ -441,6 +414,12 @@ async function loadLiveProfile() {
     if ("afrobeatsMusicUrl" in data && byId("afrobeatsMusicUrl")) byId("afrobeatsMusicUrl").value = data.afrobeatsMusicUrl || "";
     if ("spotifyMusicUrl" in data && byId("spotifyMusicUrl")) byId("spotifyMusicUrl").value = data.spotifyMusicUrl || "";
     if ("youtubeApiKey" in data && byId("youtubeApiKey")) byId("youtubeApiKey").value = data.youtubeApiKey || "";
+    if ("youtubeApiKey" in data && byId("youtubeApiKeySimple")) byId("youtubeApiKeySimple").value = data.youtubeApiKey || "";
+    if ("liveTvChannels" in data) {
+      const channels = data.liveTvChannels || defaultLiveTvChannels();
+      if (byId("liveNewsChannelsText")) byId("liveNewsChannelsText").value = channelsToText(channels.news || defaultLiveTvChannels().news);
+      if (byId("liveSportsChannelsText")) byId("liveSportsChannelsText").value = channelsToText(channels.sports || defaultLiveTvChannels().sports);
+    }
     if ("spotifyRiderUrl" in data && byId("spotifyRiderUrl")) byId("spotifyRiderUrl").value = data.spotifyRiderUrl || "";
     if ("musicRequestUrl" in data && byId("musicRequestUrl")) byId("musicRequestUrl").value = data.musicRequestUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
     if ("spotifySyncEnabled" in data && byId("spotifySyncEnabled")) byId("spotifySyncEnabled").value = data.spotifySyncEnabled ? "true" : "false";
@@ -462,6 +441,16 @@ window.addEventListener("load", async () => {
       el.addEventListener("change", () => renderPreview("Editing"));
     }
   });
+
+  byId("youtubeApiKeySimple")?.addEventListener("input", () => {
+    if (byId("youtubeApiKey")) byId("youtubeApiKey").value = byId("youtubeApiKeySimple").value;
+    renderPreview("Editing");
+  });
+  byId("liveNewsChannelsText")?.addEventListener("input", () => renderPreview("Editing"));
+  byId("liveSportsChannelsText")?.addEventListener("input", () => renderPreview("Editing"));
+  byId("saveLiveTvChannelsBtn")?.addEventListener("click", saveLiveTvChannels);
+  byId("remoteNewsBtnSimple")?.addEventListener("click", () => sendRemote("news", {}, "Live News"));
+  byId("remoteSportsBtnSimple")?.addEventListener("click", () => sendRemote("sports", {}, "Live Sports"));
 
   byId("remoteHomeBtn")?.addEventListener("click", () => sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"));
   byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "YouTube"));
