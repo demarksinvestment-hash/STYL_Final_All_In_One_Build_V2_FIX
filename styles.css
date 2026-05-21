@@ -1532,103 +1532,98 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   background:rgba(212,175,55,.16) !important;
 }
 
-/* PATCH 3 SYSTEM HEALTH PANEL */
-.health-summary-grid{
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0,1fr));
-  gap:10px;
-  margin:10px 0 12px;
-}
-
-.health-stat{
-  border:1px solid rgba(212,175,55,.25);
-  border-radius:14px;
-  background:rgba(255,255,255,.04);
-  padding:10px;
-  text-align:center;
-}
-
-.health-stat span{
-  display:block;
-  color:#f5d98a;
-  font-size:.78rem;
-  margin-bottom:5px;
-}
-
-.health-stat strong{
-  color:#fff;
-  font-size:1rem;
-}
-
-.tablet-health-panel{
-  display:grid;
-  gap:10px;
-}
-
-.health-empty{
-  color:#f5d98a;
-  border:1px dashed rgba(212,175,55,.35);
-  border-radius:14px;
+/* LIVE TV CHANNEL GRID V1 */
+.live-channel-grid-wrap{
+  border:1px solid rgba(212,175,55,.22);
+  border-radius:18px;
+  background:rgba(0,0,0,.32);
   padding:12px;
-  text-align:center;
+  margin-bottom:12px;
 }
 
-.tablet-health-card{
-  border:1px solid rgba(212,175,55,.25);
-  border-radius:16px;
-  background:rgba(0,0,0,.36);
-  padding:12px;
-}
-
-.tablet-health-card.online{
-  border-color:rgba(80,255,160,.55);
-  box-shadow:0 0 0 1px rgba(80,255,160,.08);
-}
-
-.tablet-health-card.offline{
-  opacity:.72;
-  border-color:rgba(255,120,120,.38);
-}
-
-.tablet-health-top,
-.tablet-health-row{
+.live-channel-head{
   display:flex;
   justify-content:space-between;
+  align-items:flex-end;
   gap:10px;
-  align-items:center;
+  margin-bottom:10px;
 }
 
-.tablet-health-top{
-  margin-bottom:8px;
-}
-
-.tablet-health-top strong{
+.live-channel-head strong{
   color:#d4af37;
+  font-weight:1000;
 }
 
-.tablet-health-top span,
-.tablet-health-row span{
+.live-channel-head span{
   color:#f5d98a;
-  font-size:.8rem;
-}
-
-.tablet-health-row{
-  padding:5px 0;
-  border-top:1px solid rgba(255,255,255,.06);
-}
-
-.tablet-health-row b{
-  color:#fff;
-  text-align:right;
   font-size:.82rem;
-  max-width:58%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  text-align:right;
 }
 
-@media(max-width:700px){
-  .health-summary-grid{
-    grid-template-columns:1fr;
+.live-channel-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+}
+
+.live-channel-card{
+  min-height:78px;
+  border:1px solid rgba(212,175,55,.28);
+  border-radius:16px;
+  background:rgba(255,255,255,.045);
+  color:#fff;
+  text-align:left;
+  padding:10px;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+.live-channel-card.active{
+  border-color:#d4af37;
+  background:rgba(212,175,55,.16);
+}
+
+.live-channel-card strong{
+  display:block;
+  font-size:.95rem;
+  line-height:1.15;
+  margin-top:4px;
+}
+
+.live-channel-card small{
+  display:block;
+  color:#f5d98a;
+  font-size:.74rem;
+  margin-top:4px;
+}
+
+@media(max-width:900px){
+  .live-channel-grid{grid-template-columns:repeat(2, minmax(0, 1fr));}
+  .live-channel-head{flex-direction:column;align-items:flex-start;}
+  .live-channel-head span{text-align:left;}
+}
+
+/* LIVE TV ADMIN CONTROL V1 */
+.live-tv-admin-note{
+  color:#f5d98a;
+  font-size:.88rem;
+  line-height:1.35;
+  margin:8px 0 12px;
+}
+
+.live-tv-admin-grid textarea{
+  min-height:145px;
+  resize:vertical;
+  font-family:inherit;
+  line-height:1.35;
+}
+
+.live-tv-admin-details[open]{
+  border-color:rgba(212,175,55,.42);
+}
+
+@media(max-width:900px){
+  .live-tv-admin-grid{
+    grid-template-columns:1fr !important;
   }
 }
