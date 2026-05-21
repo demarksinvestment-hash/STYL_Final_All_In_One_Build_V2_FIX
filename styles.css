@@ -1627,3 +1627,11 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     grid-template-columns:1fr !important;
   }
 }
+
+/* LIVE TV RIDER GRID FIX */
+#newsView.active .live-channel-grid-wrap,
+#sportsView.active .live-channel-grid-wrap{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
