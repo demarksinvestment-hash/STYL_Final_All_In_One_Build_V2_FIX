@@ -13,6 +13,41 @@
         <h1>STYL Remote</h1>
         <div class="step-box" id="liveStatus">Connecting...</div>
 
+        <details class="simple-details live-tv-admin-details" open>
+          <summary>Live TV Channels</summary>
+          <div class="live-tv-admin-note">Simple controls for rider News and Sports channel grids. Enter one channel per line as <strong>Label | YouTube search term</strong>.</div>
+          <div class="admin-field full">
+            <label>YouTube API Key</label>
+            <input id="youtubeApiKeySimple" placeholder="Paste YouTube Data API key" />
+          </div>
+          <div class="admin-grid live-tv-admin-grid">
+            <div class="admin-field full">
+              <label>Live News Channels</label>
+              <textarea id="liveNewsChannelsText" rows="7">ABC News Live | ABC News Live
+NBC News NOW | NBC News NOW Live
+CBS News Live | CBS News Live
+Bloomberg Live | Bloomberg Live
+Fox Weather | Fox Weather Live
+WFAA Dallas | WFAA Dallas Live</textarea>
+            </div>
+            <div class="admin-field full">
+              <label>Live Sports Channels</label>
+              <textarea id="liveSportsChannelsText" rows="7">CBS Sports HQ | CBS Sports HQ live
+Sports News Live | sports news live
+ESPN-Style Sports | ESPN sports news live
+Fox Sports | Fox Sports live
+Live Highlights | live sports highlights
+NBA News Live | NBA news live</textarea>
+            </div>
+          </div>
+          <div class="admin-actions">
+            <button class="admin-btn" id="saveLiveTvChannelsBtn" type="button">Save Live TV Channels</button>
+            <button class="admin-btn" id="remoteNewsBtnSimple" type="button">Open Live News</button>
+            <button class="admin-btn" id="remoteSportsBtnSimple" type="button">Open Live Sports</button>
+          </div>
+        </details>
+
+
         <div class="step-box">
           <strong>Remote</strong>
           <div class="admin-actions admin-actions-remote">
@@ -173,29 +208,7 @@
           </div>
         </details>
 
-        
-        <details class="simple-details health-details" open>
-          <summary>System Health</summary>
-          <div class="health-summary-grid">
-            <div class="health-stat">
-              <span>Tablets Online</span>
-              <strong id="healthOnlineCount">0</strong>
-            </div>
-            <div class="health-stat">
-              <span>Queue</span>
-              <strong id="healthQueueStatus">Idle</strong>
-            </div>
-            <div class="health-stat">
-              <span>Last Sync</span>
-              <strong id="healthLastSync">Waiting</strong>
-            </div>
-          </div>
-          <div id="tabletHealthPanel" class="tablet-health-panel">
-            <div class="health-empty">Waiting for tablets to report online...</div>
-          </div>
-        </details>
-
-<div class="compact-preview">
+        <div class="compact-preview">
           <span id="previewGreeting">Guest</span>
           <span id="previewMode">Idle</span>
         </div>
