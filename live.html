@@ -138,8 +138,32 @@
 
                   
                   </div></section>
-            <section id="newsView" class="view"><div class="embed-wrap media-sound-wrap"><button id="tapForSoundNewsBtn" class="tap-sound-overlay hidden" type="button" data-frame="newsFrame">🔊 Tap for Sound</button><iframe id="newsFrame" title="Watch News" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></section>
-            <section id="sportsView" class="view"><div class="embed-wrap media-sound-wrap"><button id="tapForSoundSportsBtn" class="tap-sound-overlay hidden" type="button" data-frame="sportsFrame">🔊 Tap for Sound</button><iframe id="sportsFrame" title="Watch Sports" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></section>
+            <section id="newsView" class="view">
+              <div class="live-channel-grid-wrap">
+                <div class="live-channel-head">
+                  <strong>Choose Live News</strong>
+                  <span>Tap a station to load the current YouTube live stream.</span>
+                </div>
+                <div id="newsChannelGrid" class="live-channel-grid"></div>
+              </div>
+              <div class="embed-wrap media-sound-wrap">
+                <button id="tapForSoundNewsBtn" class="tap-sound-overlay hidden" type="button" data-frame="newsFrame">🔊 Tap for Sound</button>
+                <iframe id="newsFrame" title="Live News" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+              </div>
+            </section>
+            <section id="sportsView" class="view">
+              <div class="live-channel-grid-wrap">
+                <div class="live-channel-head">
+                  <strong>Choose Live Sports</strong>
+                  <span>Tap a station to load the current YouTube live stream.</span>
+                </div>
+                <div id="sportsChannelGrid" class="live-channel-grid"></div>
+              </div>
+              <div class="embed-wrap media-sound-wrap">
+                <button id="tapForSoundSportsBtn" class="tap-sound-overlay hidden" type="button" data-frame="sportsFrame">🔊 Tap for Sound</button>
+                <iframe id="sportsFrame" title="Live Sports" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+              </div>
+            </section>
 
             <section id="musicView" class="view">
               <div class="music-system">
