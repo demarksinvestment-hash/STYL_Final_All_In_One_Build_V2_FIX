@@ -114,6 +114,7 @@ let spotifySyncTimer = null;
 let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
+let liveTvLastSyncNonce = "";
 
 
 async function broadcastRemoteCommand(command, extra = {}) {
@@ -308,10 +309,27 @@ async function findLiveMediaVideoIdByQuery(query = "") {
   }
 }
 
-async function loadLiveTvChannel(kind = "news", query = "", label = "") {
+async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBroadcast = true) {
   const frame = byId(kind === "sports" ? "sportsFrame" : "newsFrame");
   if (!frame) return;
   const statusLabel = label || query || (kind === "sports" ? "Sports" : "News");
+
+  // Broadcast rider tablet channel choice to all connected tablets.
+  // This uses the existing Firebase live profile document and avoids admin file changes.
+  if (shouldBroadcast && dbRef && query) {
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    liveTvLastSyncNonce = nonce;
+    broadcastRemoteCommand("livetvchannel", {
+      liveTvSync: {
+        kind,
+        query,
+        label: statusLabel,
+        nonce,
+        updatedAt: new Date().toISOString()
+      }
+    });
+  }
+
   const videoId = await findLiveMediaVideoIdByQuery(query);
 
   if (videoId) {
@@ -1482,9 +1500,27 @@ async function requestBrowserWeather() {
   }
 }
 
+
+function applyLiveTvSyncFromProfile() {
+  const sync = config.liveTvSync || {};
+  const kind = sync.kind === "sports" ? "sports" : "news";
+  const query = String(sync.query || "").trim();
+  const label = String(sync.label || query || (kind === "sports" ? "Live Sports" : "Live News")).trim();
+  const nonce = String(sync.nonce || "").trim();
+
+  if (!query || !nonce || nonce === liveTvLastSyncNonce) return;
+
+  liveTvLastSyncNonce = nonce;
+  showView(kind, kind === "sports" ? "Live Sports" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
+  setTimeout(() => {
+    loadLiveTvChannel(kind, query, label, false);
+  }, 450);
+}
+
 function applyProfile(data = {}) {
   Object.assign(config, data || {});
   refreshMusicModeUrls();
+  applyLiveTvSyncFromProfile();
   if (typeof initLiveTvChannelGrids === "function") initLiveTvChannelGrids();
 
   if (byId("chauffeurName")) byId("chauffeurName").textContent = config.chauffeurName || "Ayo";
@@ -1511,7 +1547,8 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "news") showView("news", "Live News", "newsBtn");
+      if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
+      else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
@@ -1648,3 +1685,8 @@ console.log("LIVE_NEWS_SPORTS_AUTOFINDER_V1 loaded");
 console.log("LIVE_TV_CHANNEL_GRID_V1 loaded");
 
 console.log("LIVE_TV_CHANNEL_GRID_ADMIN_CONTROL_V1 loaded");
+
+window.addEventListener("load", () => { if (typeof initLiveTvChannelGrids === "function") setTimeout(initLiveTvChannelGrids, 700); });
+console.log("LIVE_TV_RIDER_GRID_BACKUP_INIT loaded");
+
+console.log("LIVE_TV_MULTI_TABLET_SYNC_V1 loaded");
