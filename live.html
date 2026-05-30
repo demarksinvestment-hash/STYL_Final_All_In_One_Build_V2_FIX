@@ -141,8 +141,8 @@
             <section id="newsView" class="view">
               <div class="live-channel-grid-wrap">
                 <div class="live-channel-head">
-                  <strong>Choose Live News</strong>
-                  <span>Tap a station to load the current YouTube live stream.</span>
+                  <strong>Live News</strong>
+                  <span>Choose a station</span>
                 </div>
                 <div id="newsChannelGrid" class="live-channel-grid"></div>
               </div>
@@ -154,8 +154,8 @@
             <section id="sportsView" class="view">
               <div class="live-channel-grid-wrap">
                 <div class="live-channel-head">
-                  <strong>Choose Live Sports</strong>
-                  <span>Tap a station to load the current YouTube live stream.</span>
+                  <strong>Live Sports</strong>
+                  <span>Choose a station</span>
                 </div>
                 <div id="sportsChannelGrid" class="live-channel-grid"></div>
               </div>
@@ -223,9 +223,12 @@
       </div>
       <div id="endTripBadge" class="end-trip-kicker">VIP OFFER UNLOCKED</div>
       <h2 id="endTripHeadline">Thanks for riding with STYL</h2>
-      <p id="endTripBody">Enjoy $15 off your next ride.</p>
-      <div class="end-trip-code">Use promo code <strong id="endTripPromo">SPECIAL10</strong></div>
-      <a id="endTripBookBtn" class="end-trip-book-btn" href="https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer" target="_blank" rel="noopener"><span id="endTripButtonText">Book Your Next Ride</span></a>
+      <p id="endTripBody">Scan to book your next ride.</p>
+      <div class="end-trip-qr-wrap">
+        <img id="endTripBookingQr" class="end-trip-booking-qr" alt="Scan to book your next ride" />
+        <div id="endTripQrText" class="end-trip-qr-text">Scan to book your next ride</div>
+      </div>
+      <a id="endTripBookBtn" class="end-trip-book-btn hidden" href="https://stylblackcar.com/" target="_blank" rel="noopener"><span id="endTripButtonText">Book Your Next Ride</span></a>
       <button id="endTripCloseBtn" class="end-trip-close-btn" type="button">Close</button>
     </div>
   </div>
