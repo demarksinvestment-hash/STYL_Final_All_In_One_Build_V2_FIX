@@ -33,8 +33,8 @@ const config = {
       { label: "WFAA Dallas", query: "WFAA Dallas Live" }
     ],
     sports: [
-      { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "Sports News Live", query: "sports news live" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ sports live" },
+      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
       { label: "ESPN-Style Sports", query: "ESPN sports news live" },
       { label: "Fox Sports", query: "Fox Sports live" },
       { label: "Live Highlights", query: "live sports highlights" },
@@ -131,11 +131,11 @@ async function broadcastRemoteCommand(command, extra = {}) {
 function applyEndTripUpsellContent() {
   const upsell = config.endTripUpsell || {};
   const headline = upsell.headline || "Thanks for riding with STYL";
-  const body = upsell.body || "Enjoy $15 off your next ride.";
-  const promo = upsell.promo || "SPECIAL10";
+  const body = upsell.body || "Scan to book your next ride.";
+  const promo = upsell.promo || "";
   const badge = upsell.badge || "VIP OFFER UNLOCKED";
-  const buttonText = upsell.buttonText || "Book Your Next Ride";
-  const buttonLink = upsell.buttonLink || `https://stylblackcar.com/?promo=${encodeURIComponent(promo)}&source=end_trip_offer`;
+  const buttonText = upsell.buttonText || "Scan to book your next ride";
+  const buttonLink = upsell.buttonLink || config.bookingUrl || "https://stylblackcar.com/";
   const theme = upsell.theme || "gold";
 
   const overlay = byId("endTripOverlay");
@@ -152,11 +152,23 @@ function applyEndTripUpsellContent() {
   setText("endTripHeadline", headline);
   setText("endTripBody", body);
   setText("endTripPromo", promo);
+  const promoEl = byId("endTripPromo");
+  const promoWrap = promoEl?.closest(".end-trip-code");
+  if (promoWrap) promoWrap.classList.toggle("hidden", !promo);
   setText("endTripBadge", badge);
   setText("endTripButtonText", buttonText);
 
   const link = byId("endTripBookBtn");
   if (link) link.href = buttonLink;
+
+  const qr = byId("endTripBookingQr");
+  if (qr) {
+    qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(buttonLink);
+    qr.alt = "Scan to book your next ride";
+  }
+  const qrText = byId("endTripQrText");
+  if (qrText) qrText.textContent = "Scan to book your next ride";
+
 }
 
 
@@ -166,7 +178,7 @@ function showEndTripOverlay() {
   if (!overlay) return;
   overlay.classList.remove("hidden");
   overlay.classList.add("show");
-  const seconds = Number(config.endTripUpsell?.duration || 30);
+  const seconds = Number(config.endTripUpsell?.duration || 60);
   clearTimeout(window.__stylEndTripTimer);
   window.__stylEndTripTimer = setTimeout(hideEndTripOverlay, Math.max(8, seconds) * 1000);
 }
@@ -286,33 +298,62 @@ const fallbackLiveTvChannels = {
     { label: "WFAA Dallas", query: "WFAA Dallas Live" }
   ],
   sports: [
-    { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-    { label: "Sports News Live", query: "sports news live" },
+    { label: "CBS Sports HQ", query: "CBS Sports HQ sports live" },
     { label: "ESPN-Style Sports", query: "ESPN sports news live" },
-    { label: "Fox Sports", query: "Fox Sports live" },
-    { label: "Live Highlights", query: "live sports highlights" },
-    { label: "NBA News Live", query: "NBA news live" }
+    { label: "Fox Sports", query: "Fox Sports live stream sports" },
+    { label: "NBA News Live", query: "NBA news live today" },
+    { label: "NFL News Live", query: "NFL news live today" },
+    { label: "Sports Highlights", query: "sports highlights live today" }
   ]
 };
 
-async function findLiveMediaVideoIdByQuery(query = "") {
+async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=1&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=8&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
     const res = await fetch(url);
     if (!res.ok) return "";
     const json = await res.json();
-    return json.items?.[0]?.id?.videoId || "";
+    const items = json.items || [];
+
+    if (kind === "sports") {
+      const blocked = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather"];
+      const sportsTerms = ["sports", "espn", "nba", "nfl", "mlb", "nhl", "cbs sports", "fox sports", "bleacher", "football", "basketball", "soccer"];
+      const match = items.find(item => {
+        const title = String(item.snippet?.title || "").toLowerCase();
+        const channel = String(item.snippet?.channelTitle || "").toLowerCase();
+        const haystack = `${title} ${channel}`;
+        const isBlocked = blocked.some(term => haystack.includes(term));
+        const isSports = sportsTerms.some(term => haystack.includes(term));
+        return !isBlocked && isSports && item.id?.videoId;
+      });
+      return match?.id?.videoId || "";
+    }
+
+    return items.find(item => item.id?.videoId)?.id?.videoId || "";
   } catch (e) {
     console.warn("Live channel lookup failed", query, e);
     return "";
   }
 }
 
+
+function highlightLiveTvChannel(kind = "news", query = "") {
+  const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
+  if (!grid) return;
+  const targetQuery = String(query || "").trim();
+  grid.querySelectorAll(".live-channel-card").forEach(card => {
+    const isActive = targetQuery && String(card.dataset.query || "").trim() === targetQuery;
+    card.classList.toggle("active", isActive);
+    card.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
 async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBroadcast = true) {
   const frame = byId(kind === "sports" ? "sportsFrame" : "newsFrame");
   if (!frame) return;
   const statusLabel = label || query || (kind === "sports" ? "Sports" : "News");
+  highlightLiveTvChannel(kind, query);
 
   // Broadcast rider tablet channel choice to all connected tablets.
   // This uses the existing Firebase live profile document and avoids admin file changes.
@@ -330,7 +371,7 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
     });
   }
 
-  const videoId = await findLiveMediaVideoIdByQuery(query);
+  const videoId = await findLiveMediaVideoIdByQuery(query, kind);
 
   if (videoId) {
     if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
@@ -359,6 +400,8 @@ function renderLiveTvChannelGrid(kind = "news") {
       <small>Tap to watch live</small>
     </button>
   `).join("");
+
+  highlightLiveTvChannel(kind, config.liveTvSync?.kind === kind ? (config.liveTvSync?.query || "") : "");
 
   grid.querySelectorAll(".live-channel-card").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1690,3 +1733,5 @@ window.addEventListener("load", () => { if (typeof initLiveTvChannelGrids === "f
 console.log("LIVE_TV_RIDER_GRID_BACKUP_INIT loaded");
 
 console.log("LIVE_TV_MULTI_TABLET_SYNC_V1 loaded");
+
+console.log("LIVE_TV_HIGHLIGHT_CBS_ENDRIDE_QR_V1 loaded");
