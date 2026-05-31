@@ -345,26 +345,26 @@ async function clearBookingClicks() {
 
 function getUpsellFormData() {
   return {
-    headline: byId("upsellHeadline")?.value.trim() || "Thanks for riding with STYL",
-    body: byId("upsellBody")?.value.trim() || "Enjoy $15 off your next ride.",
+    headline: byId("upsellHeadline")?.value.trim() || "Thanks for Riding with STYL",
+    body: byId("upsellBody")?.value.trim() || "Scan to book your next ride and save 10% with promo code SPECIAL10.",
     promo: byId("upsellPromo")?.value.trim() || "SPECIAL10",
     badge: byId("upsellBadge")?.value.trim() || "VIP OFFER UNLOCKED",
-    buttonText: byId("upsellButtonText")?.value.trim() || "Book Your Next Ride",
-    buttonLink: byId("upsellButtonLink")?.value.trim() || "https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer",
-    duration: Number(byId("upsellDuration")?.value || 30),
+    buttonText: byId("upsellButtonText")?.value.trim() || "Scan to book your next ride",
+    buttonLink: byId("upsellButtonLink")?.value.trim() || "https://stylblackcar.com/",
+    duration: Number(byId("upsellDuration")?.value || 60),
     theme: byId("upsellTheme")?.value || "gold"
   };
 }
 
 function fillUpsellForm(data = {}) {
   const upsell = data.endTripUpsell || {};
-  if (byId("upsellHeadline")) byId("upsellHeadline").value = upsell.headline || "Thanks for riding with STYL";
-  if (byId("upsellBody")) byId("upsellBody").value = upsell.body || "Enjoy $15 off your next ride.";
+  if (byId("upsellHeadline")) byId("upsellHeadline").value = upsell.headline || "Thanks for Riding with STYL";
+  if (byId("upsellBody")) byId("upsellBody").value = upsell.body || "Scan to book your next ride and save 10% with promo code SPECIAL10."; 
   if (byId("upsellPromo")) byId("upsellPromo").value = upsell.promo || "SPECIAL10";
   if (byId("upsellBadge")) byId("upsellBadge").value = upsell.badge || "VIP OFFER UNLOCKED";
-  if (byId("upsellButtonText")) byId("upsellButtonText").value = upsell.buttonText || "Book Your Next Ride";
-  if (byId("upsellButtonLink")) byId("upsellButtonLink").value = upsell.buttonLink || "https://stylblackcar.com/?promo=SPECIAL10&source=end_trip_offer";
-  if (byId("upsellDuration")) byId("upsellDuration").value = upsell.duration || 30;
+  if (byId("upsellButtonText")) byId("upsellButtonText").value = upsell.buttonText || "Scan to book your next ride";
+  if (byId("upsellButtonLink")) byId("upsellButtonLink").value = upsell.buttonLink || "https://stylblackcar.com/";
+  if (byId("upsellDuration")) byId("upsellDuration").value = upsell.duration || 60;
   if (byId("upsellTheme")) byId("upsellTheme").value = upsell.theme || "gold";
 }
 
@@ -489,3 +489,5 @@ window.addEventListener("load", async () => {
   renderPreview("Idle");
   await loadLiveProfile();
 });
+
+console.log("ADMIN_ENDRIDE_QR_UPSELL_V1 loaded");
