@@ -1812,3 +1812,8 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     height:165px;
   }
 }
+
+/* ADMIN END RIDE QR UPSELL V1 */
+.simple-details summary{
+  cursor:pointer;
+}
