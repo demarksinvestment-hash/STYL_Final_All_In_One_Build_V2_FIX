@@ -35,9 +35,9 @@ function defaultLiveTvChannels() {
       { label: "⚽ Soccer", query: "soccer" },
       { label: "🏆 World Cup", query: "worldcup" },
       { label: "⛳ Golf", query: "golf" },
-      { label: "🏈 Football", query: "football" },
-      { label: "🏀 Basketball", query: "basketball" },
-      { label: "⚾ Baseball", query: "baseball" },
+      { label: "🏈 NFL", query: "football" },
+      { label: "🏀 NBA", query: "basketball" },
+      { label: "⚾ MLB", query: "baseball" },
       { label: "🎾 Tennis", query: "tennis" }
     ]
   };
