@@ -34,13 +34,12 @@ const config = {
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "Live Golf", query: "PGA TOUR live golf" },
-      { label: "NBA Live", query: "NBA live basketball" },
-      { label: "Live Soccer", query: "soccer live match today" },
-      { label: "FIFA World Cup", query: "FIFA World Cup live soccer" },
-      { label: "MLB Live", query: "MLB live baseball" },
-      { label: "Tennis Live", query: "tennis live match" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+{ label: "⚽ Live Soccer", query: "soccer live match today" },
+{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
+{ label: "⚾ MLB Live", query: "MLB live baseball" },
+{ label: "🎾 Tennis Live", query: "tennis live match" },
+ { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
     ]
   },
   youtubePanelQuery: "",
@@ -301,12 +300,11 @@ const fallbackLiveTvChannels = {
   ],
   sports: [
     { label: "Yahoo Sports", query: "Yahoo Sports live" },
-    { label: "Live Golf", query: "PGA TOUR live golf" },
-    { label: "NBA Live", query: "NBA live basketball" },
-    { label: "Live Soccer", query: "soccer live match today" },
-    { label: "FIFA World Cup", query: "FIFA World Cup live soccer" },
-    { label: "MLB Live", query: "MLB live baseball" },
-    { label: "Tennis Live", query: "tennis live match" },
+    { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+{ label: "⚽ Live Soccer", query: "soccer live match today" },
+{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
+{ label: "⚾ MLB Live", query: "MLB live baseball" },
+{ label: "🎾 Tennis Live", query: "tennis live match" },
     { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
   ]
 };
