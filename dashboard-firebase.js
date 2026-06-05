@@ -36,9 +36,9 @@ const config = {
       { label: "⚽ Soccer", query: "soccer" },
       { label: "🏆 World Cup", query: "worldcup" },
       { label: "⛳ Golf", query: "golf" },
-      { label: "🏈 Football", query: "football" },
-      { label: "🏀 Basketball", query: "basketball" },
-      { label: "⚾ Baseball", query: "baseball" },
+      { label: "🏈 NFL", query: "football" },
+      { label: "🏀 NBA", query: "basketball" },
+      { label: "⚾ MLB", query: "baseball" },
       { label: "🎾 Tennis", query: "tennis" }
     ]
   },
@@ -310,34 +310,47 @@ const fallbackLiveTvChannels = {
   ]
 };
 
-function buildSportsSearchQuery(query = "") {
+function buildSportsSearchQuery(query = "", mode = "live") {
   const raw = String(query || "").trim();
   const q = raw.toLowerCase();
+  const live = mode === "live";
+  const suffix = live ? "official live today coverage" : "official highlights latest today";
 
-  // Phase 1.2: use sport-specific search keys instead of broad ESPN/FOX searches.
-  // Broad searches were pulling old Cowboys rebroadcasts and unavailable embeds.
-  if (q === "soccer" || q.includes("soccer")) {
-    return "FIFA OR Telemundo Deportes OR FOX Soccer official soccer live today highlights match coverage";
-  }
-  if (q === "worldcup" || q.includes("world cup") || q.includes("fifa")) {
-    return "FIFA World Cup 2026 official live coverage highlights press conference";
-  }
-  if (q === "golf" || q.includes("pga") || q.includes("golf")) {
-    return "PGA TOUR official live today golf highlights tournament coverage";
-  }
-  if (q === "football" || q.includes("football") || q.includes("nfl")) {
-    return "NFL official live today football highlights game coverage";
-  }
-  if (q === "basketball" || q.includes("basketball") || q.includes("nba")) {
-    return "NBA official live today basketball highlights game coverage";
-  }
-  if (q === "baseball" || q.includes("baseball") || q.includes("mlb")) {
-    return "MLB official live today baseball highlights game coverage";
-  }
-  if (q === "tennis" || q.includes("tennis") || q.includes("atp") || q.includes("wta")) {
-    return "Tennis Channel ATP WTA official live today tennis highlights tournament coverage";
-  }
-  return `${raw} official live today sports highlights coverage`;
+  // Phase 1.3: category search keys only. Avoid ESPN/FOX News style broad terms because they pull old Cowboys clips.
+  if (q === "soccer" || q.includes("soccer")) return `FIFA MLS FOX Soccer Telemundo Deportes soccer ${suffix}`;
+  if (q === "worldcup" || q.includes("world cup") || q.includes("fifa")) return `FIFA World Cup 2026 ${suffix}`;
+  if (q === "golf" || q.includes("pga") || q.includes("golf")) return `PGA TOUR Golf Channel golf ${suffix}`;
+  if (q === "football" || q.includes("football") || q.includes("nfl")) return `NFL football ${suffix}`;
+  if (q === "basketball" || q.includes("basketball") || q.includes("nba")) return `NBA basketball ${suffix}`;
+  if (q === "baseball" || q.includes("baseball") || q.includes("mlb")) return `MLB baseball ${suffix}`;
+  if (q === "tennis" || q.includes("tennis") || q.includes("atp") || q.includes("wta")) return `Tennis Channel ATP WTA tennis ${suffix}`;
+  return `${raw} official ${live ? "live" : "highlights"} today sports coverage`;
+}
+
+function sportsCategoryIcon(query = "") {
+  const q = String(query || "").toLowerCase();
+  if (q.includes("soccer")) return "⚽";
+  if (q.includes("world")) return "🏆";
+  if (q.includes("golf")) return "⛳";
+  if (q.includes("football") || q.includes("nfl")) return "🏈";
+  if (q.includes("basketball") || q.includes("nba")) return "🏀";
+  if (q.includes("baseball") || q.includes("mlb")) return "⚾";
+  if (q.includes("tennis")) return "🎾";
+  return "🏟️";
+}
+
+function buildSportsUnavailableHtml(label = "Sports", query = "") {
+  const search = buildSportsSearchQuery(query, "highlights");
+  const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(search)}`;
+  const icon = sportsCategoryIcon(query || label);
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+    html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at 50% 35%,rgba(212,166,67,.14),transparent 28%),linear-gradient(180deg,#111,#000);color:#f5d98a}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:34px;box-sizing:border-box}
+    .card{max-width:760px;border:1px solid rgba(235,192,98,.45);border-radius:24px;padding:30px;background:rgba(0,0,0,.48);box-shadow:0 0 32px rgba(212,166,67,.15)}
+    .icon{font-size:56px;margin-bottom:14px}.title{font-size:30px;font-weight:800;margin-bottom:10px}.body{font-size:18px;line-height:1.45;color:#fff0c4;margin-bottom:20px}
+    .btn{display:inline-block;padding:14px 22px;border-radius:999px;border:1px solid #e0b24a;color:#fff2cb;text-decoration:none;background:linear-gradient(90deg,#3d2a08,#9c6f1b,#3d2a08);font-weight:700}
+    .small{font-size:13px;margin-top:16px;opacity:.78}
+  </style></head><body><div class="wrap"><div class="card"><div class="icon">${icon}</div><div class="title">${label}</div><div class="body">No official embeddable live stream is available right now. This avoids broken “Video unavailable” screens and old game replays.</div><a class="btn" href="${ytUrl}" target="_blank" rel="noopener">Open official highlights / live coverage</a><div class="small">STYL only shows legal public YouTube coverage. Paid games may not be embeddable.</div></div></div></body></html>`;
 }
 
 function scoreSportsLiveItem(item, query = "") {
@@ -393,21 +406,33 @@ function scoreSportsLiveItem(item, query = "") {
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
-    const searchQuery = kind === "sports" ? buildSportsSearchQuery(query) : query;
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&videoEmbeddable=true&order=date&maxResults=12&safeSearch=moderate&q=${encodeURIComponent(searchQuery)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) return "";
-    const json = await res.json();
-    const items = json.items || [];
+    const runSearch = async (searchQuery, liveOnly = false) => {
+      const livePart = liveOnly ? "&eventType=live" : "";
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video${livePart}&videoEmbeddable=true&order=date&maxResults=16&safeSearch=moderate&q=${encodeURIComponent(searchQuery)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.items || [];
+    };
 
     if (kind === "sports") {
-      const ranked = items
+      // First try true live. If there is no official embeddable live stream, fall back to latest legal highlights.
+      const liveItems = await runSearch(buildSportsSearchQuery(query, "live"), true);
+      let ranked = liveItems
+        .map(item => ({ item, score: scoreSportsLiveItem(item, query) + 25 }))
+        .filter(row => row.score > 0)
+        .sort((a, b) => b.score - a.score);
+      if (ranked[0]?.item?.id?.videoId) return ranked[0].item.id.videoId;
+
+      const recentItems = await runSearch(buildSportsSearchQuery(query, "highlights"), false);
+      ranked = recentItems
         .map(item => ({ item, score: scoreSportsLiveItem(item, query) }))
         .filter(row => row.score > 0)
         .sort((a, b) => b.score - a.score);
       return ranked[0]?.item?.id?.videoId || "";
     }
 
+    const items = await runSearch(query, true);
     return items.find(item => item.id?.videoId)?.id?.videoId || "";
   } catch (e) {
     console.warn("Live channel lookup failed", query, e);
@@ -453,12 +478,15 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 
   if (videoId) {
     if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
+    frame.srcdoc = "";
     frame.src = buildYouTubeVideoUrl(videoId);
   } else {
     if (kind === "sports") {
-      // Never fall back to a stale fixed sports video; show a fresh YouTube search page for this category instead.
-      frame.src = buildYouTubeFallbackUrl(buildSportsSearchQuery(query));
+      // Never fall back to stale old games. Show a clean STYL fallback instead of YouTube's broken unavailable screen.
+      frame.removeAttribute("src");
+      frame.srcdoc = buildSportsUnavailableHtml(statusLabel, query);
     } else {
+      frame.srcdoc = "";
       frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : resolveNewsUrl());
     }
   }
@@ -478,9 +506,9 @@ function renderLiveTvChannelGrid(kind = "news") {
   const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
   grid.innerHTML = channels.map((channel) => `
     <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
-      <span>${kind === "sports" ? "🏈" : "📺"}</span>
+      <span>${kind === "sports" ? sportsCategoryIcon(channel.query || channel.label) : "📺"}</span>
       <strong>${channel.label}</strong>
-      <small>Tap to watch live</small>
+      <small>${kind === "sports" ? "Live / highlights" : "Tap to watch live"}</small>
     </button>
   `).join("");
 
