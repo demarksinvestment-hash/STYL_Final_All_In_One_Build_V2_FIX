@@ -307,6 +307,71 @@ const fallbackLiveTvChannels = {
   ]
 };
 
+const sportsHubCategoryMeta = {
+  soccer: { icon: "⚽", title: "Live Soccer", description: "Official soccer live streams, match coverage, press conferences, and highlights.", cards: ["FIFA, FOX Sports, Telemundo Deportes", "Live streams when available", "Highlights and press conferences"] },
+  worldcup: { icon: "🏆", title: "FIFA World Cup 2026", description: "Dallas / AT&T Stadium visitor sports screen with official coverage and useful travel prompts.", cards: ["Dallas venue: AT&T Stadium", "Match highlights and live coverage", "Airport, hotel, and visitor transportation info"] },
+  golf: { icon: "⛳", title: "Live Golf", description: "PGA Tour, Golf Channel, featured groups, leaderboards, and tournament highlights.", cards: ["PGA Tour and Golf Channel", "Tournament highlights", "Featured groups and schedules"] },
+  football: { icon: "🏈", title: "Football", description: "Football news, legal live coverage, press conferences, and highlights.", cards: ["NFL and college coverage", "Highlights and pressers", "Game-day updates"] },
+  basketball: { icon: "🏀", title: "Basketball", description: "Basketball live coverage, official highlights, and league updates.", cards: ["NBA and college coverage", "Highlights and recaps", "Press conferences"] },
+  baseball: { icon: "⚾", title: "Baseball", description: "Baseball live coverage, official highlights, and league updates.", cards: ["MLB coverage", "Highlights and recaps", "Team updates"] },
+  tennis: { icon: "🎾", title: "Tennis", description: "Tennis tournament coverage, highlights, and press conferences.", cards: ["ATP / WTA coverage", "Tournament highlights", "Press conferences"] }
+};
+
+const defaultSportsHubChannels = {
+  soccer: [
+    { label: "FIFA Official", query: "FIFA official live soccer" },
+    { label: "FOX Soccer", query: "FOX Soccer live" },
+    { label: "Telemundo Deportes", query: "Telemundo Deportes futbol en vivo" },
+    { label: "Soccer Highlights", query: "official soccer highlights today" }
+  ],
+  worldcup: [
+    { label: "FIFA World Cup", query: "FIFA World Cup 2026 official live" },
+    { label: "FOX World Cup", query: "FOX Sports FIFA World Cup 2026" },
+    { label: "Telemundo World Cup", query: "Telemundo Deportes Mundial 2026" },
+    { label: "Dallas Match Info", query: "FIFA World Cup 2026 Dallas AT&T Stadium" }
+  ],
+  golf: [
+    { label: "PGA TOUR", query: "PGA TOUR official live" },
+    { label: "Golf Channel", query: "Golf Channel live" },
+    { label: "CBS Golf", query: "CBS Sports golf highlights" },
+    { label: "Featured Groups", query: "PGA TOUR featured groups" }
+  ],
+  football: [
+    { label: "NFL", query: "NFL official live" },
+    { label: "FOX Sports Football", query: "FOX Sports football live" },
+    { label: "CBS Sports HQ", query: "CBS Sports HQ football live" },
+    { label: "Football Highlights", query: "official football highlights today" }
+  ],
+  basketball: [
+    { label: "NBA", query: "NBA official live" },
+    { label: "CBS Basketball", query: "CBS Sports basketball live" },
+    { label: "Basketball Highlights", query: "official basketball highlights today" }
+  ],
+  baseball: [
+    { label: "MLB", query: "MLB official live" },
+    { label: "FOX MLB", query: "FOX Sports MLB live" },
+    { label: "Baseball Highlights", query: "official baseball highlights today" }
+  ],
+  tennis: [
+    { label: "Tennis Channel", query: "Tennis Channel live" },
+    { label: "ATP Tour", query: "ATP Tour official highlights" },
+    { label: "WTA", query: "WTA official highlights" }
+  ]
+};
+
+let currentSportsHubCategory = "soccer";
+
+function getSportsHubChannels() {
+  const saved = config.sportsHubChannels || {};
+  return { ...defaultSportsHubChannels, ...saved };
+}
+
+function sportsHubFlattenedChannels() {
+  const hub = getSportsHubChannels();
+  return Object.entries(hub).flatMap(([category, channels]) => (Array.isArray(channels) ? channels : []).map(item => ({ ...item, category })));
+}
+
+
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
@@ -382,24 +447,72 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 
   const title = byId("panelTitle");
   const subtitle = byId("panelSubtitle");
-  if (title) title.textContent = kind === "sports" ? "Live Sports" : "Live News";
+  if (title) title.textContent = kind === "sports" ? "Sports Hub" : "Live News";
   if (subtitle) subtitle.textContent = videoId ? `Now playing: ${statusLabel}` : `Could not find active live stream for ${statusLabel}. Showing fallback.`;
 
   tryAutoSound(kind === "sports" ? "sportsFrame" : "newsFrame");
   showActiveSoundOverlay();
 }
 
+function getSportsHubIcon(category = "sports") {
+  return sportsHubCategoryMeta[category]?.icon || "🏟️";
+}
+
+function renderSportsInfoPanel(category = "soccer") {
+  const panel = byId("sportsInfoPanel");
+  if (!panel) return;
+  const meta = sportsHubCategoryMeta[category] || sportsHubCategoryMeta.soccer;
+  const cards = meta.cards || [];
+  panel.innerHTML = cards.map((text, index) => `
+    <div class="sports-info-card">
+      <strong>${index === 0 ? meta.title : index === 1 ? "Coverage" : "Rider Info"}</strong>
+      <span>${text}</span>
+    </div>
+  `).join("");
+}
+
+function renderSportsCategoryBar() {
+  const bar = byId("sportsCategoryBar");
+  if (!bar) return;
+  bar.innerHTML = Object.entries(sportsHubCategoryMeta).map(([key, meta]) => `
+    <button type="button" class="sports-category-btn ${key === currentSportsHubCategory ? "active" : ""}" data-sports-category="${key}">${meta.icon} ${meta.title}</button>
+  `).join("");
+  bar.querySelectorAll(".sports-category-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentSportsHubCategory = btn.dataset.sportsCategory || "soccer";
+      renderLiveTvChannelGrid("sports");
+    });
+  });
+}
+
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
-  const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
-  grid.innerHTML = channels.map((channel) => `
-    <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
-      <span>${kind === "sports" ? "🏈" : "📺"}</span>
-      <strong>${channel.label}</strong>
-      <small>Tap to watch live</small>
-    </button>
-  `).join("");
+
+  if (kind === "sports") {
+    const meta = sportsHubCategoryMeta[currentSportsHubCategory] || sportsHubCategoryMeta.soccer;
+    const channels = getSportsHubChannels()[currentSportsHubCategory] || defaultSportsHubChannels[currentSportsHubCategory] || [];
+    const title = byId("sportsHubCategoryTitle");
+    if (title) title.textContent = `${meta.icon} ${meta.title}`;
+    renderSportsCategoryBar();
+    renderSportsInfoPanel(currentSportsHubCategory);
+    grid.innerHTML = channels.map((channel) => `
+      <button type="button" class="live-channel-card" data-kind="sports" data-query="${channel.query}" data-label="${channel.label}">
+        <span>${meta.icon}</span>
+        <strong>${channel.label}</strong>
+        <small><em>${meta.title}</em> • Tap to watch</small>
+      </button>
+    `).join("");
+  } else {
+    const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
+    grid.innerHTML = channels.map((channel) => `
+      <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
+        <span>📺</span>
+        <strong>${channel.label}</strong>
+        <small>Tap to watch live</small>
+      </button>
+    `).join("");
+  }
 
   highlightLiveTvChannel(kind, config.liveTvSync?.kind === kind ? (config.liveTvSync?.query || "") : "");
 
@@ -1554,7 +1667,7 @@ function applyLiveTvSyncFromProfile() {
   if (!query || !nonce || nonce === liveTvLastSyncNonce) return;
 
   liveTvLastSyncNonce = nonce;
-  showView(kind, kind === "sports" ? "Live Sports" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
+  showView(kind, kind === "sports" ? "Sports Hub" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
   setTimeout(() => {
     loadLiveTvChannel(kind, query, label, false);
   }, 450);
@@ -1592,7 +1705,7 @@ function applyProfile(data = {}) {
     try {
       if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
+      else if (cmd === "sports") showView("sports", "Sports Hub", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
@@ -1627,7 +1740,7 @@ function initTabs() {
     ["homeBtn","home","STYL Home"],
     ["youtubeBtn","youtube","YouTube Lounge"],
     ["newsBtn","news","Live News"],
-    ["sportsBtn","sports","Live Sports"],
+    ["sportsBtn","sports","Sports Hub"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1676,7 +1789,7 @@ function initSwipe() {
         home:["STYL Home","homeBtn"],
         youtube:["YouTube Lounge","youtubeBtn"],
         news:["Live News","newsBtn"],
-        sports:["Live Sports","sportsBtn"],
+        sports:["Sports Hub","sportsBtn"],
         music:["Play Music","musicBtn"],
         vip:["Join Our VIP","vipBtn"],
         book:["Book Next Ride","bookBtn"]
