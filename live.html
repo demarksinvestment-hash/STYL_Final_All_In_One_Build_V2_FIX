@@ -31,7 +31,7 @@
         <button class="tab-btn active" id="homeBtn" type="button"><span class="tab-icon">🏠</span><span class="tab-text">Home</span></button>
         <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">▶️</span><span class="tab-text">YouTube Lounge</span></button>
         <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">Live News</span></button>
-        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">🏟️</span><span class="tab-text">Sports Hub</span></button>
+        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">🏈</span><span class="tab-text">Live Sports</span></button>
         <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Play Music</span></button>
         <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Next Ride</span></button>
       </nav>
@@ -151,29 +151,17 @@
                 <iframe id="newsFrame" title="Live News" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
               </div>
             </section>
-            <section id="sportsView" class="view sports-hub-view">
-              <div class="sports-hub-shell">
-                <div class="sports-hub-top">
-                  <div>
-                    <div class="sports-hub-kicker">STYL PREMIUM SPORTS</div>
-                    <h2>Sports Hub</h2>
-                    <p>Official and legal live streams, highlights, press conferences, schedules, and visitor information.</p>
-                  </div>
-                  <div class="sports-hub-badge">Phase 1 Live</div>
+            <section id="sportsView" class="view">
+              <div class="live-channel-grid-wrap">
+                <div class="live-channel-head">
+                  <strong>Live Sports</strong>
+                  <span>Choose a station</span>
                 </div>
-                <div id="sportsCategoryBar" class="sports-category-bar"></div>
-                <div id="sportsInfoPanel" class="sports-info-panel"></div>
-                <div class="live-channel-grid-wrap sports-hub-channels">
-                  <div class="live-channel-head">
-                    <strong id="sportsHubCategoryTitle">Live Sports</strong>
-                    <span>Choose official coverage</span>
-                  </div>
-                  <div id="sportsChannelGrid" class="live-channel-grid"></div>
-                </div>
-                <div class="embed-wrap media-sound-wrap sports-player-wrap">
-                  <button id="tapForSoundSportsBtn" class="tap-sound-overlay hidden" type="button" data-frame="sportsFrame">🔊 Tap for Sound</button>
-                  <iframe id="sportsFrame" title="Sports Hub Player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                </div>
+                <div id="sportsChannelGrid" class="live-channel-grid"></div>
+              </div>
+              <div class="embed-wrap media-sound-wrap">
+                <button id="tapForSoundSportsBtn" class="tap-sound-overlay hidden" type="button" data-frame="sportsFrame">🔊 Tap for Sound</button>
+                <iframe id="sportsFrame" title="Live Sports" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
               </div>
             </section>
 
