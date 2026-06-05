@@ -2070,24 +2070,79 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   }
 }
 
+/* PHASE 1.1 SPORTS HUB FIX: full-size media + floating category bar */
+#sportsView.active{
+  position:relative !important;
+  height:100% !important;
+  min-height:0 !important;
+}
 
-/* Phase 1 Sports Hub */
-.sports-hub-view{overflow:auto;padding-right:4px}
-.sports-hub-shell{height:100%;display:grid;grid-template-rows:auto auto auto auto 1fr;gap:10px;min-height:0}
-.sports-hub-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid rgba(235,192,98,.38);border-radius:16px;background:linear-gradient(135deg,rgba(255,220,130,.10),rgba(0,0,0,.25))}
-.sports-hub-top h2{margin:2px 0 4px;font-size:2vw;line-height:1;color:#fff3c8}
-.sports-hub-top p{margin:0;font-size:.95vw;color:#f0d281;line-height:1.35}
-.sports-hub-kicker{font-size:.75vw;letter-spacing:3px;color:#f4d789;opacity:.9}
-.sports-hub-badge{padding:10px 14px;border:1px solid rgba(241,207,121,.6);border-radius:999px;background:rgba(0,0,0,.35);font-size:.9vw;font-weight:700;white-space:nowrap}
-.sports-category-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.sports-category-btn{border-radius:14px;border:1px solid #c58b24;background:rgba(0,0,0,.62);color:#f4d789;padding:11px 8px;font-size:.82vw;font-weight:800;min-height:56px;cursor:pointer;box-shadow:inset 0 0 14px rgba(255,214,102,.03)}
-.sports-category-btn.active{background:linear-gradient(180deg,rgba(255,244,210,.22),rgba(88,62,14,.78)),linear-gradient(90deg,rgba(90,64,13,.98),rgba(184,132,31,.96),rgba(90,64,13,.98));border-color:#f1cf79;color:#fff6d0;box-shadow:0 0 16px rgba(247,221,144,.28)}
-.sports-info-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.sports-info-card{border:1px solid rgba(235,192,98,.35);border-radius:14px;background:rgba(255,220,130,.045);padding:12px;min-height:76px}
-.sports-info-card strong{display:block;color:#fff3c8;font-size:.92vw;margin-bottom:5px}
-.sports-info-card span{font-size:.82vw;color:#f0d281;line-height:1.35}
-.sports-hub-channels{margin:0}
-.sports-player-wrap{min-height:300px}
-.live-channel-card small em{font-style:normal;color:#fff3c8}
-@media (max-width:1200px){.sports-category-bar{grid-template-columns:repeat(4,1fr)}.sports-info-panel{grid-template-columns:1fr}.sports-hub-top h2{font-size:3vw}.sports-hub-top p,.sports-hub-kicker,.sports-hub-badge,.sports-category-btn,.sports-info-card strong,.sports-info-card span{font-size:1.4vw}}
-@media (max-width:900px){.sports-category-bar{grid-template-columns:1fr 1fr}.sports-hub-top{align-items:flex-start;flex-direction:column}.sports-hub-top h2{font-size:6vw}.sports-hub-top p,.sports-hub-kicker,.sports-hub-badge,.sports-category-btn,.sports-info-card strong,.sports-info-card span{font-size:2.5vw}}
+#sportsView.active .live-channel-grid-wrap{
+  position:absolute !important;
+  top:10px !important;
+  left:12px !important;
+  right:12px !important;
+  z-index:8 !important;
+  width:auto !important;
+  margin:0 !important;
+  padding:6px 8px !important;
+  background:linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.38)) !important;
+  border:1px solid rgba(212,175,55,.38) !important;
+  backdrop-filter:blur(6px) !important;
+  box-shadow:0 10px 26px rgba(0,0,0,.35) !important;
+}
+
+#sportsView.active .live-channel-head{
+  display:none !important;
+}
+
+#sportsView.active .live-channel-grid{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:7px !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  padding:0 !important;
+}
+
+#sportsView.active .live-channel-card{
+  height:32px !important;
+  min-height:32px !important;
+  padding:5px 11px !important;
+  border-radius:999px !important;
+  flex:0 0 auto !important;
+  background:rgba(0,0,0,.58) !important;
+}
+
+#sportsView.active .live-channel-card strong{
+  font-size:.72rem !important;
+}
+
+#sportsView.active .live-channel-card small{
+  display:none !important;
+}
+
+#sportsView.active .embed-wrap,
+#sportsView.active #sportsFrame{
+  width:100% !important;
+  height:100% !important;
+  min-height:620px !important;
+}
+
+#sportsView.active .embed-wrap{
+  margin:0 !important;
+  border-radius:16px !important;
+  overflow:hidden !important;
+}
+
+@media(max-width:900px){
+  #sportsView.active .live-channel-grid-wrap{
+    top:8px !important;
+    left:8px !important;
+    right:8px !important;
+  }
+  #sportsView.active .embed-wrap,
+  #sportsView.active #sportsFrame{
+    min-height:560px !important;
+  }
+}
