@@ -32,13 +32,13 @@ function defaultLiveTvChannels() {
       { label: "WFAA Dallas", query: "WFAA Dallas Live" }
     ],
     sports: [
-      { label: "⚽ Soccer Live", query: "FIFA FOX Soccer Telemundo Deportes live soccer" },
-      { label: "🏆 World Cup 2026", query: "FIFA World Cup 2026 official live coverage" },
-      { label: "⛳ Golf Live", query: "PGA TOUR Golf Channel live golf" },
-      { label: "🏈 Football Live", query: "NFL CBS Sports FOX Sports live football" },
-      { label: "🏀 Basketball Live", query: "NBA official live basketball" },
-      { label: "⚾ Baseball Live", query: "MLB official live baseball" },
-      { label: "🎾 Tennis Live", query: "Tennis Channel ATP WTA live tennis" }
+      { label: "⚽ Soccer", query: "soccer" },
+      { label: "🏆 World Cup", query: "worldcup" },
+      { label: "⛳ Golf", query: "golf" },
+      { label: "🏈 Football", query: "football" },
+      { label: "🏀 Basketball", query: "basketball" },
+      { label: "⚾ Baseball", query: "baseball" },
+      { label: "🎾 Tennis", query: "tennis" }
     ]
   };
 }
