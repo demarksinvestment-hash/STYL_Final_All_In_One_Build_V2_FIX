@@ -393,13 +393,27 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
   showActiveSoundOverlay();
 }
 
+function getLiveChannelIcon(kind = "news", channel = {}) {
+  if (kind !== "sports") return "📺";
+  const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
+  if (text.includes("golf") || text.includes("pga")) return "⛳";
+  if (text.includes("soccer") || text.includes("fifa") || text.includes("world cup") || text.includes("football club")) return "⚽";
+  if (text.includes("nba") || text.includes("basketball")) return "🏀";
+  if (text.includes("mlb") || text.includes("baseball")) return "⚾";
+  if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "🎾";
+  if (text.includes("nfl") || text.includes("cowboys") || text.includes("american football")) return "🏈";
+  if (text.includes("yahoo")) return "🏟️";
+  if (text.includes("cbs")) return "📡";
+  return "🏆";
+}
+
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
   const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
   grid.innerHTML = channels.map((channel) => `
     <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
-      <span>${kind === "sports" ? "🏈" : "📺"}</span>
+      <span>${getLiveChannelIcon(kind, channel)}</span>
       <strong>${channel.label}</strong>
       <small>Tap to watch live</small>
     </button>
