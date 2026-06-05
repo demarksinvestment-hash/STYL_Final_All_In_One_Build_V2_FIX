@@ -307,92 +307,87 @@ const fallbackLiveTvChannels = {
   ]
 };
 
-const sportsHubCategoryMeta = {
-  soccer: { icon: "⚽", title: "Live Soccer", description: "Official soccer live streams, match coverage, press conferences, and highlights.", cards: ["FIFA, FOX Sports, Telemundo Deportes", "Live streams when available", "Highlights and press conferences"] },
-  worldcup: { icon: "🏆", title: "FIFA World Cup 2026", description: "Dallas / AT&T Stadium visitor sports screen with official coverage and useful travel prompts.", cards: ["Dallas venue: AT&T Stadium", "Match highlights and live coverage", "Airport, hotel, and visitor transportation info"] },
-  golf: { icon: "⛳", title: "Live Golf", description: "PGA Tour, Golf Channel, featured groups, leaderboards, and tournament highlights.", cards: ["PGA Tour and Golf Channel", "Tournament highlights", "Featured groups and schedules"] },
-  football: { icon: "🏈", title: "Football", description: "Football news, legal live coverage, press conferences, and highlights.", cards: ["NFL and college coverage", "Highlights and pressers", "Game-day updates"] },
-  basketball: { icon: "🏀", title: "Basketball", description: "Basketball live coverage, official highlights, and league updates.", cards: ["NBA and college coverage", "Highlights and recaps", "Press conferences"] },
-  baseball: { icon: "⚾", title: "Baseball", description: "Baseball live coverage, official highlights, and league updates.", cards: ["MLB coverage", "Highlights and recaps", "Team updates"] },
-  tennis: { icon: "🎾", title: "Tennis", description: "Tennis tournament coverage, highlights, and press conferences.", cards: ["ATP / WTA coverage", "Tournament highlights", "Press conferences"] }
-};
+function buildSportsSearchQuery(query = "") {
+  const base = String(query || "").trim();
+  const q = base.toLowerCase();
 
-const defaultSportsHubChannels = {
-  soccer: [
-    { label: "FIFA Official", query: "FIFA official live soccer" },
-    { label: "FOX Soccer", query: "FOX Soccer live" },
-    { label: "Telemundo Deportes", query: "Telemundo Deportes futbol en vivo" },
-    { label: "Soccer Highlights", query: "official soccer highlights today" }
-  ],
-  worldcup: [
-    { label: "FIFA World Cup", query: "FIFA World Cup 2026 official live" },
-    { label: "FOX World Cup", query: "FOX Sports FIFA World Cup 2026" },
-    { label: "Telemundo World Cup", query: "Telemundo Deportes Mundial 2026" },
-    { label: "Dallas Match Info", query: "FIFA World Cup 2026 Dallas AT&T Stadium" }
-  ],
-  golf: [
-    { label: "PGA TOUR", query: "PGA TOUR official live" },
-    { label: "Golf Channel", query: "Golf Channel live" },
-    { label: "CBS Golf", query: "CBS Sports golf highlights" },
-    { label: "Featured Groups", query: "PGA TOUR featured groups" }
-  ],
-  football: [
-    { label: "NFL", query: "NFL official live" },
-    { label: "FOX Sports Football", query: "FOX Sports football live" },
-    { label: "CBS Sports HQ", query: "CBS Sports HQ football live" },
-    { label: "Football Highlights", query: "official football highlights today" }
-  ],
-  basketball: [
-    { label: "NBA", query: "NBA official live" },
-    { label: "CBS Basketball", query: "CBS Sports basketball live" },
-    { label: "Basketball Highlights", query: "official basketball highlights today" }
-  ],
-  baseball: [
-    { label: "MLB", query: "MLB official live" },
-    { label: "FOX MLB", query: "FOX Sports MLB live" },
-    { label: "Baseball Highlights", query: "official baseball highlights today" }
-  ],
-  tennis: [
-    { label: "Tennis Channel", query: "Tennis Channel live" },
-    { label: "ATP Tour", query: "ATP Tour official highlights" },
-    { label: "WTA", query: "WTA official highlights" }
-  ]
-};
-
-let currentSportsHubCategory = "soccer";
-
-function getSportsHubChannels() {
-  const saved = config.sportsHubChannels || {};
-  return { ...defaultSportsHubChannels, ...saved };
+  // Keep broad sports buttons from drifting into old Cowboys/full-game rebroadcasts.
+  if (q.includes("soccer") || q.includes("fifa") || q.includes("telemundo")) {
+    return `${base} official live today soccer match coverage`;
+  }
+  if (q.includes("world cup")) {
+    return `${base} FIFA official live today World Cup 2026 coverage`;
+  }
+  if (q.includes("golf") || q.includes("pga")) {
+    return `${base} PGA TOUR official live today golf coverage`;
+  }
+  if (q.includes("football") || q.includes("nfl")) {
+    return `${base} NFL official live today football coverage`;
+  }
+  if (q.includes("basketball") || q.includes("nba")) {
+    return `${base} NBA official live today basketball coverage`;
+  }
+  if (q.includes("baseball") || q.includes("mlb")) {
+    return `${base} MLB official live today baseball coverage`;
+  }
+  if (q.includes("tennis") || q.includes("atp") || q.includes("wta")) {
+    return `${base} official live today tennis coverage`;
+  }
+  return `${base} official live today sports coverage`;
 }
 
-function sportsHubFlattenedChannels() {
-  const hub = getSportsHubChannels();
-  return Object.entries(hub).flatMap(([category, channels]) => (Array.isArray(channels) ? channels : []).map(item => ({ ...item, category })));
-}
+function scoreSportsLiveItem(item, query = "") {
+  const title = String(item.snippet?.title || "").toLowerCase();
+  const channel = String(item.snippet?.channelTitle || "").toLowerCase();
+  const haystack = `${title} ${channel}`;
+  const q = String(query || "").toLowerCase();
 
+  const blockedAlways = [
+    "republic tv", "abc news", "nbc news", "cbs news live", "bloomberg", "fox weather", "wfaa", "weather",
+    "madden", "simulation", "simulated", "gaming", "watch party", "reaction", "fan stream", "radio only"
+  ];
+  if (blockedAlways.some(term => haystack.includes(term))) return -999;
+
+  // These are usually the old-game problem the rider noticed.
+  const replayTerms = ["classic", "throwback", "replay", "full game", "greatest games", "199", "200", "201", "2020", "2021", "2022", "2023", "2024"];
+  const wantsHighlights = q.includes("highlight");
+  if (!wantsHighlights && replayTerms.some(term => haystack.includes(term))) return -999;
+
+  // Do not let broad football/sports searches get stuck on Dallas Cowboys unless the button explicitly asks for Cowboys.
+  if (!q.includes("cowboys") && haystack.includes("cowboys")) return -999;
+
+  let score = 0;
+  const officialChannels = [
+    "fifa", "fox sports", "fox soccer", "telemundo deportes", "tudn", "pga tour", "golf channel", "nbc sports",
+    "cbs sports", "cbs sports hq", "nfl", "nba", "mlb", "nhl", "tennis channel", "atp tour", "wta"
+  ];
+  if (officialChannels.some(term => channel.includes(term))) score += 50;
+
+  const liveTerms = ["live", "now", "today", "coverage", "press conference", "pre game", "pregame", "postgame", "match", "tournament"];
+  liveTerms.forEach(term => { if (haystack.includes(term)) score += 6; });
+
+  const sportsTerms = ["sports", "soccer", "football", "basketball", "baseball", "golf", "tennis", "fifa", "nfl", "nba", "mlb", "pga", "atp", "wta"];
+  if (sportsTerms.some(term => haystack.includes(term))) score += 10;
+
+  return item.id?.videoId ? score : -999;
+}
 
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=8&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const searchQuery = kind === "sports" ? buildSportsSearchQuery(query) : query;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&order=date&maxResults=12&safeSearch=moderate&q=${encodeURIComponent(searchQuery)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
     const res = await fetch(url);
     if (!res.ok) return "";
     const json = await res.json();
     const items = json.items || [];
 
     if (kind === "sports") {
-      const blocked = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather"];
-      const sportsTerms = ["sports", "espn", "nba", "nfl", "mlb", "nhl", "cbs sports", "fox sports", "bleacher", "football", "basketball", "soccer"];
-      const match = items.find(item => {
-        const title = String(item.snippet?.title || "").toLowerCase();
-        const channel = String(item.snippet?.channelTitle || "").toLowerCase();
-        const haystack = `${title} ${channel}`;
-        const isBlocked = blocked.some(term => haystack.includes(term));
-        const isSports = sportsTerms.some(term => haystack.includes(term));
-        return !isBlocked && isSports && item.id?.videoId;
-      });
-      return match?.id?.videoId || "";
+      const ranked = items
+        .map(item => ({ item, score: scoreSportsLiveItem(item, query) }))
+        .filter(row => row.score > 0)
+        .sort((a, b) => b.score - a.score);
+      return ranked[0]?.item?.id?.videoId || "";
     }
 
     return items.find(item => item.id?.videoId)?.id?.videoId || "";
@@ -447,72 +442,24 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 
   const title = byId("panelTitle");
   const subtitle = byId("panelSubtitle");
-  if (title) title.textContent = kind === "sports" ? "Sports Hub" : "Live News";
+  if (title) title.textContent = kind === "sports" ? "Live Sports" : "Live News";
   if (subtitle) subtitle.textContent = videoId ? `Now playing: ${statusLabel}` : `Could not find active live stream for ${statusLabel}. Showing fallback.`;
 
   tryAutoSound(kind === "sports" ? "sportsFrame" : "newsFrame");
   showActiveSoundOverlay();
 }
 
-function getSportsHubIcon(category = "sports") {
-  return sportsHubCategoryMeta[category]?.icon || "🏟️";
-}
-
-function renderSportsInfoPanel(category = "soccer") {
-  const panel = byId("sportsInfoPanel");
-  if (!panel) return;
-  const meta = sportsHubCategoryMeta[category] || sportsHubCategoryMeta.soccer;
-  const cards = meta.cards || [];
-  panel.innerHTML = cards.map((text, index) => `
-    <div class="sports-info-card">
-      <strong>${index === 0 ? meta.title : index === 1 ? "Coverage" : "Rider Info"}</strong>
-      <span>${text}</span>
-    </div>
-  `).join("");
-}
-
-function renderSportsCategoryBar() {
-  const bar = byId("sportsCategoryBar");
-  if (!bar) return;
-  bar.innerHTML = Object.entries(sportsHubCategoryMeta).map(([key, meta]) => `
-    <button type="button" class="sports-category-btn ${key === currentSportsHubCategory ? "active" : ""}" data-sports-category="${key}">${meta.icon} ${meta.title}</button>
-  `).join("");
-  bar.querySelectorAll(".sports-category-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      currentSportsHubCategory = btn.dataset.sportsCategory || "soccer";
-      renderLiveTvChannelGrid("sports");
-    });
-  });
-}
-
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
-
-  if (kind === "sports") {
-    const meta = sportsHubCategoryMeta[currentSportsHubCategory] || sportsHubCategoryMeta.soccer;
-    const channels = getSportsHubChannels()[currentSportsHubCategory] || defaultSportsHubChannels[currentSportsHubCategory] || [];
-    const title = byId("sportsHubCategoryTitle");
-    if (title) title.textContent = `${meta.icon} ${meta.title}`;
-    renderSportsCategoryBar();
-    renderSportsInfoPanel(currentSportsHubCategory);
-    grid.innerHTML = channels.map((channel) => `
-      <button type="button" class="live-channel-card" data-kind="sports" data-query="${channel.query}" data-label="${channel.label}">
-        <span>${meta.icon}</span>
-        <strong>${channel.label}</strong>
-        <small><em>${meta.title}</em> • Tap to watch</small>
-      </button>
-    `).join("");
-  } else {
-    const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
-    grid.innerHTML = channels.map((channel) => `
-      <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
-        <span>📺</span>
-        <strong>${channel.label}</strong>
-        <small>Tap to watch live</small>
-      </button>
-    `).join("");
-  }
+  const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
+  grid.innerHTML = channels.map((channel) => `
+    <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
+      <span>${kind === "sports" ? "🏈" : "📺"}</span>
+      <strong>${channel.label}</strong>
+      <small>Tap to watch live</small>
+    </button>
+  `).join("");
 
   highlightLiveTvChannel(kind, config.liveTvSync?.kind === kind ? (config.liveTvSync?.query || "") : "");
 
@@ -1667,7 +1614,7 @@ function applyLiveTvSyncFromProfile() {
   if (!query || !nonce || nonce === liveTvLastSyncNonce) return;
 
   liveTvLastSyncNonce = nonce;
-  showView(kind, kind === "sports" ? "Sports Hub" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
+  showView(kind, kind === "sports" ? "Live Sports" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
   setTimeout(() => {
     loadLiveTvChannel(kind, query, label, false);
   }, 450);
@@ -1705,7 +1652,7 @@ function applyProfile(data = {}) {
     try {
       if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
-      else if (cmd === "sports") showView("sports", "Sports Hub", "sportsBtn");
+      else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
@@ -1740,7 +1687,7 @@ function initTabs() {
     ["homeBtn","home","STYL Home"],
     ["youtubeBtn","youtube","YouTube Lounge"],
     ["newsBtn","news","Live News"],
-    ["sportsBtn","sports","Sports Hub"],
+    ["sportsBtn","sports","Live Sports"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
@@ -1789,7 +1736,7 @@ function initSwipe() {
         home:["STYL Home","homeBtn"],
         youtube:["YouTube Lounge","youtubeBtn"],
         news:["Live News","newsBtn"],
-        sports:["Sports Hub","sportsBtn"],
+        sports:["Live Sports","sportsBtn"],
         music:["Play Music","musicBtn"],
         vip:["Join Our VIP","vipBtn"],
         book:["Book Next Ride","bookBtn"]
