@@ -32,12 +32,13 @@ function defaultLiveTvChannels() {
       { label: "WFAA Dallas", query: "WFAA Dallas Live" }
     ],
     sports: [
-      { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "Sports News Live", query: "sports news live" },
-      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
-      { label: "Fox Sports", query: "Fox Sports live" },
-      { label: "Live Highlights", query: "live sports highlights" },
-      { label: "NBA News Live", query: "NBA news live" }
+      { label: "⚽ Soccer Live", query: "FIFA FOX Soccer Telemundo Deportes live soccer" },
+      { label: "🏆 World Cup 2026", query: "FIFA World Cup 2026 official live coverage" },
+      { label: "⛳ Golf Live", query: "PGA TOUR Golf Channel live golf" },
+      { label: "🏈 Football Live", query: "NFL CBS Sports FOX Sports live football" },
+      { label: "🏀 Basketball Live", query: "NBA official live basketball" },
+      { label: "⚾ Baseball Live", query: "MLB official live baseball" },
+      { label: "🎾 Tennis Live", query: "Tennis Channel ATP WTA live tennis" }
     ]
   };
 }
@@ -61,53 +62,6 @@ function channelsToText(channels = []) {
     .join("\n");
 }
 
-function defaultSportsHubChannels() {
-  return {
-    soccer: [
-      { label: "FIFA Official", query: "FIFA official live soccer" },
-      { label: "FOX Soccer", query: "FOX Soccer live" },
-      { label: "Telemundo Deportes", query: "Telemundo Deportes futbol en vivo" }
-    ],
-    worldcup: [
-      { label: "FIFA World Cup", query: "FIFA World Cup 2026 official live" },
-      { label: "FOX World Cup", query: "FOX Sports FIFA World Cup 2026" },
-      { label: "Dallas Match Info", query: "FIFA World Cup 2026 Dallas AT&T Stadium" }
-    ],
-    golf: [
-      { label: "PGA TOUR", query: "PGA TOUR official live" },
-      { label: "Golf Channel", query: "Golf Channel live" }
-    ],
-    football: [{ label: "NFL", query: "NFL official live" }],
-    basketball: [{ label: "NBA", query: "NBA official live" }],
-    baseball: [{ label: "MLB", query: "MLB official live" }],
-    tennis: [{ label: "Tennis Channel", query: "Tennis Channel live" }]
-  };
-}
-
-function sportsHubChannelsToText(hub = defaultSportsHubChannels()) {
-  return Object.entries(hub || {}).flatMap(([category, channels]) =>
-    (Array.isArray(channels) ? channels : []).map(item => `${category} | ${item.label || ""} | ${item.query || item.label || ""}`)
-  ).join("\n");
-}
-
-function parseSportsHubLines(value = "") {
-  const out = {};
-  String(value || "").split(/\n+/).map(line => line.trim()).filter(Boolean).forEach(line => {
-    const parts = line.split("|").map(part => part.trim()).filter(Boolean);
-    const category = (parts[0] || "soccer").toLowerCase().replace(/\s+/g, "");
-    const label = parts[1] || parts[0] || line;
-    const query = parts[2] || parts[1] || parts[0] || line;
-    if (!out[category]) out[category] = [];
-    out[category].push({ label, query });
-  });
-  return out;
-}
-
-function getSportsHubChannelsFromAdmin() {
-  return parseSportsHubLines(byId("sportsHubChannelsText")?.value || sportsHubChannelsToText(defaultSportsHubChannels()));
-}
-
-
 function getLiveTvChannelsFromAdmin() {
   const defaults = defaultLiveTvChannels();
   return {
@@ -119,7 +73,6 @@ function getLiveTvChannelsFromAdmin() {
 async function saveLiveTvChannels() {
   const payload = buildProfile();
   payload.liveTvChannels = getLiveTvChannelsFromAdmin();
-  payload.sportsHubChannels = getSportsHubChannelsFromAdmin();
   payload.youtubeApiKey = byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "";
   if (byId("youtubeApiKey")) byId("youtubeApiKey").value = payload.youtubeApiKey;
   await savePayload(payload, "Live TV channels saved");
@@ -145,7 +98,6 @@ function buildProfile() {
     spotifyMusicUrl: byId("spotifyMusicUrl")?.value.trim() || "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
     youtubeApiKey: byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "",
     liveTvChannels: getLiveTvChannelsFromAdmin(),
-    sportsHubChannels: getSportsHubChannelsFromAdmin(),
     spotifyRiderUrl: byId("spotifyRiderUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
     musicRequestUrl: byId("musicRequestUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
     spotifySyncEnabled: (byId("spotifySyncEnabled")?.value || "true") === "true",
@@ -469,7 +421,6 @@ async function loadLiveProfile() {
       if (byId("liveNewsChannelsText")) byId("liveNewsChannelsText").value = channelsToText(channels.news || defaultLiveTvChannels().news);
       if (byId("liveSportsChannelsText")) byId("liveSportsChannelsText").value = channelsToText(channels.sports || defaultLiveTvChannels().sports);
     }
-    if (byId("sportsHubChannelsText")) byId("sportsHubChannelsText").value = sportsHubChannelsToText(data.sportsHubChannels || defaultSportsHubChannels());
     if ("spotifyRiderUrl" in data && byId("spotifyRiderUrl")) byId("spotifyRiderUrl").value = data.spotifyRiderUrl || "";
     if ("musicRequestUrl" in data && byId("musicRequestUrl")) byId("musicRequestUrl").value = data.musicRequestUrl || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html";
     if ("spotifySyncEnabled" in data && byId("spotifySyncEnabled")) byId("spotifySyncEnabled").value = data.spotifySyncEnabled ? "true" : "false";
@@ -498,10 +449,9 @@ window.addEventListener("load", async () => {
   });
   byId("liveNewsChannelsText")?.addEventListener("input", () => renderPreview("Editing"));
   byId("liveSportsChannelsText")?.addEventListener("input", () => renderPreview("Editing"));
-  byId("sportsHubChannelsText")?.addEventListener("input", () => renderPreview("Editing"));
   byId("saveLiveTvChannelsBtn")?.addEventListener("click", saveLiveTvChannels);
   byId("remoteNewsBtnSimple")?.addEventListener("click", () => sendRemote("news", {}, "Live News"));
-  byId("remoteSportsBtnSimple")?.addEventListener("click", () => sendRemote("sports", {}, "Sports Hub"));
+  byId("remoteSportsBtnSimple")?.addEventListener("click", () => sendRemote("sports", {}, "Live Sports"));
 
   byId("remoteHomeBtn")?.addEventListener("click", () => sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"));
   byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "YouTube"));
