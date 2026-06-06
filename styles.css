@@ -2233,3 +2233,15 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   #sportsView .live-channel-card{height:34px !important;min-height:34px !important;padding:6px 10px !important;}
   #sportsView .live-channel-card strong{font-size:.68rem !important;}
 }
+.chauffeur-photo{
+    width:120px;
+    max-height:160px;
+    object-fit:contain;
+    display:block;
+    margin:8px auto;
+    filter:drop-shadow(0 0 12px rgba(212,175,55,.35));
+}
+
+.status-card .status-sub{
+    text-align:center;
+}
