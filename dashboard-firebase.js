@@ -22,7 +22,7 @@ const config = {
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
-  youtubeApiKey: "AIzaSyC9fMTUpLY1N3v0RhcgAz8zaythw70Aw8o",
+  youtubeApiKey: "",
   liveTvChannels: {
     news: [
       { label: "ABC News Live", query: "ABC News Live" },
@@ -423,7 +423,7 @@ function getLiveMediaFallback(kind) {
 }
 
 function getLiveMediaCacheKey(kind) {
-  return `stylLiveMedia_lastWorking_${kind}`;
+  return `stylLiveMedia_${kind}`;
 }
 
 function readStoredLiveMedia(kind) {
@@ -1550,10 +1550,8 @@ function applyLiveTvSyncFromProfile() {
   const query = String(sync.query || "").trim();
   const label = String(sync.label || query || (kind === "sports" ? "Live Sports" : "Live News")).trim();
   const nonce = String(sync.nonce || "").trim();
-  const updatedAt = Date.parse(sync.updatedAt || "");
-  const isFresh = updatedAt && (Date.now() - updatedAt < 5 * 60 * 1000);
 
-  if (!query || !nonce || nonce === liveTvLastSyncNonce || !isFresh) return;
+  if (!query || !nonce || nonce === liveTvLastSyncNonce) return;
 
   liveTvLastSyncNonce = nonce;
   showView(kind, kind === "sports" ? "Live Sports" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
