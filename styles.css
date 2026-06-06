@@ -2233,3 +2233,25 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   #sportsView .live-channel-card{height:34px !important;min-height:34px !important;padding:6px 10px !important;}
   #sportsView .live-channel-card strong{font-size:.68rem !important;}
 }
+.chauffeur-profile-card{
+  text-align:center;
+}
+
+.chauffeur-photo{
+  width:120px;
+  max-height:165px;
+  object-fit:contain;
+  display:block;
+  margin:8px auto;
+  filter:drop-shadow(0 0 14px rgba(212,175,55,.38));
+}
+
+.chauffeur-role{
+  color:#f5d98a;
+  font-weight:700;
+}
+
+.chauffeur-company{
+  color:#d4af37;
+  font-weight:700;
+}
