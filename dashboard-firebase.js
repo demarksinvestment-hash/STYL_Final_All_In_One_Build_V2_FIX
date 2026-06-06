@@ -22,34 +22,34 @@ const config = {
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
-  youtubeApiKey: "",
+  youtubeApiKey: "AIzaSyC9fMTUpLY1N3v0RhcgAz8zaythw70Aw8o",
   liveTvChannels: {
-    news: [
-      { label: "ABC News Live", query: "ABC News Live" },
-      { label: "NBC News NOW", query: "NBC News NOW Live" },
-      { label: "CBS News Live", query: "CBS News Live" },
-      { label: "Bloomberg Live", query: "Bloomberg Live" },
-      { label: "Fox Weather", query: "Fox Weather Live" },
-      { label: "WFAA Dallas", query: "WFAA Dallas Live" }
-    ],
-    sports: [
-      { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
-{ label: "⚽ Live Soccer", query: "soccer live match today" },
-{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
-{ label: "⚾ MLB Live", query: "MLB live baseball" },
-{ label: "🎾 Tennis Live", query: "tennis live match" },
- { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
-    ]
-  },
+  news: [
+    { label: "ABC News Live", query: "ABC News Live official live" },
+    { label: "NBC News NOW", query: "NBC News NOW official live" },
+    { label: "CBS News Live", query: "CBS News official live" },
+    { label: "Bloomberg Live", query: "Bloomberg Television official live" },
+    { label: "Fox Weather", query: "Fox Weather official live" },
+    { label: "WFAA Dallas", query: "WFAA Dallas official live news" }
+  ],
+  sports: [
+    { label: "🏈 Football", query: "NFL official highlights today" },
+    { label: "🏀 Basketball", query: "NBA official highlights today" },
+    { label: "⚾ MLB Live", query: "MLB official highlights today" },
+    { label: "🎾 Tennis Live", query: "ATP WTA tennis official highlights today" },
+    { label: "⛳ Live Golf", query: "PGA TOUR official highlights today" },
+    { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today" },
+    { label: "🏆 FIFA World Cup", query: "FIFA World Cup official highlights" }
+  ]
+},
   youtubePanelQuery: "",
   youtubePanelVideoId: "",
   requestQueue: [],
   bookingUrl: "https://stylblackcar.com/",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
-  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?enablejsapi=1&rel=0",
+  newsUrl: "https://www.youtube.com/embed?listType=search&list=live news official&enablejsapi=1&rel=0",
+sportsUrl: "https://www.youtube.com/embed?listType=search&list=official sports highlights today&enablejsapi=1&rel=0",
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
@@ -291,24 +291,23 @@ const liveMediaQueries = {
 
 const fallbackLiveTvChannels = {
   news: [
-    { label: "ABC News Live", query: "ABC News Live" },
-    { label: "NBC News NOW", query: "NBC News NOW Live" },
-    { label: "CBS News Live", query: "CBS News Live" },
-    { label: "Bloomberg Live", query: "Bloomberg Live" },
-    { label: "Fox Weather", query: "Fox Weather Live" },
-    { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+    { label: "ABC News Live", query: "ABC News Live official live" },
+    { label: "NBC News NOW", query: "NBC News NOW official live" },
+    { label: "CBS News Live", query: "CBS News official live" },
+    { label: "Bloomberg Live", query: "Bloomberg Television official live" },
+    { label: "Fox Weather", query: "Fox Weather official live" },
+    { label: "WFAA Dallas", query: "WFAA Dallas official live news" }
   ],
   sports: [
-    { label: "Yahoo Sports", query: "Yahoo Sports live" },
-    { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
-{ label: "⚽ Live Soccer", query: "soccer live match today" },
-{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
-{ label: "⚾ MLB Live", query: "MLB live baseball" },
-{ label: "🎾 Tennis Live", query: "tennis live match" },
-    { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
+    { label: "🏈 Football", query: "NFL official highlights today" },
+    { label: "🏀 Basketball", query: "NBA official highlights today" },
+    { label: "⚾ MLB Live", query: "MLB official highlights today" },
+    { label: "🎾 Tennis Live", query: "ATP WTA tennis official highlights today" },
+    { label: "⛳ Live Golf", query: "PGA TOUR official highlights today" },
+    { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today" },
+    { label: "🏆 FIFA World Cup", query: "FIFA World Cup official highlights" }
   ]
 };
-
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
