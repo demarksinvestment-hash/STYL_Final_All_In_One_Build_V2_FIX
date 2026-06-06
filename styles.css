@@ -2255,3 +2255,41 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   color:#d4af37;
   font-weight:700;
 }
+
+
+/* === STYL FINAL PATCH: Chauffeur photo + clean profile card === */
+.chauffeur-profile-card{
+  text-align:center !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:4px !important;
+  overflow:hidden !important;
+}
+.chauffeur-photo{
+  width:108px !important;
+  max-height:145px !important;
+  object-fit:contain !important;
+  display:block !important;
+  margin:6px auto 4px auto !important;
+  filter:drop-shadow(0 0 14px rgba(212,175,55,.38)) !important;
+}
+.chauffeur-profile-card .status-value{
+  margin-bottom:2px !important;
+}
+.chauffeur-profile-card .status-sub{
+  margin-top:2px !important;
+  line-height:1.15 !important;
+}
+.chauffeur-role{
+  color:#f5d98a !important;
+  font-weight:700 !important;
+}
+.chauffeur-company{
+  color:#d4af37 !important;
+  font-weight:800 !important;
+}
+@media(max-width:900px){
+  .chauffeur-photo{width:92px !important;max-height:124px !important;}
+}
