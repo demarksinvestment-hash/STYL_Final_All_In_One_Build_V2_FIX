@@ -22,7 +22,7 @@ const config = {
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
-  youtubeApiKey: "",
+  youtubeApiKey: "AIzaSyC9fMTUpLY1N3v0RhcgAz8zaythw70Aw8o",
   liveTvChannels: {
     news: [
       { label: "ABC News Live", query: "ABC News Live" },
