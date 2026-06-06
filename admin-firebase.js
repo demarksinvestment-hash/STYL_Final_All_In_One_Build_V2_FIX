@@ -13,7 +13,7 @@ let continuousQueueEnabled = false;
 
 const defaults = {
   newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed?listType=search&list=Yahoo%20Sports%20live&autoplay=1&rel=0"
+  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?autoplay=1&mute=1&enablejsapi=1&rel=0"
 };
 
 function setStatus(text) {
@@ -33,13 +33,13 @@ function defaultLiveTvChannels() {
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR official live golf" },
-      { label: "🏀 NBA Live", query: "NBA official live basketball" },
-      { label: "⚽ Live Soccer", query: "FIFA soccer official live" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official live" },
-      { label: "⚾ MLB Live", query: "MLB official live baseball" },
-      { label: "🎾 Tennis Live", query: "Tennis Channel official live" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ official live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR live official golf" },
+      { label: "🏀 NBA Live", query: "NBA live official" },
+      { label: "⚽ Live Soccer", query: "FIFA live soccer official" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official" },
+      { label: "⚾ MLB Live", query: "MLB live official" },
+      { label: "🎾 Tennis Live", query: "Tennis Channel live official" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ live official" }
     ]
   };
 }
