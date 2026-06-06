@@ -32,12 +32,13 @@ function defaultLiveTvChannels() {
       { label: "WFAA Dallas", query: "WFAA Dallas Live" }
     ],
     sports: [
+      { label: "Yahoo Sports", query: "Yahoo Sports live" },
       { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "Sports News Live", query: "sports news live" },
-      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
-      { label: "Fox Sports", query: "Fox Sports live" },
-      { label: "Live Highlights", query: "live sports highlights" },
-      { label: "NBA News Live", query: "NBA news live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "🏀 NBA Live", query: "NBA live basketball" },
+      { label: "⚽ Live Soccer", query: "soccer live match today" },
+      { label: "⚾ MLB Live", query: "MLB live baseball" },
+      { label: "🎾 Tennis Live", query: "tennis live match" }
     ]
   };
 }
@@ -72,6 +73,11 @@ function getLiveTvChannelsFromAdmin() {
 async function saveLiveTvChannels() {
   const payload = buildProfile();
   payload.liveTvChannels = getLiveTvChannelsFromAdmin();
+  // Clear stale saved channel commands so old ABC/Cowboys streams do not auto-reload.
+  payload.liveTvSync = null;
+  payload.newsLiveOverride = "";
+  payload.sportsLiveOverride = "";
+  payload.remoteCommand = "";
   payload.youtubeApiKey = byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "";
   if (byId("youtubeApiKey")) byId("youtubeApiKey").value = payload.youtubeApiKey;
   await savePayload(payload, "Live TV channels saved");
