@@ -34,12 +34,13 @@ const config = {
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
-{ label: "⚽ Live Soccer", query: "soccer live match today" },
-{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
-{ label: "⚾ MLB Live", query: "MLB live baseball" },
-{ label: "🎾 Tennis Live", query: "tennis live match" },
- { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR official live golf" },
+      { label: "🏀 NBA Live", query: "NBA official live basketball" },
+      { label: "⚽ Live Soccer", query: "FIFA soccer official live" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official live" },
+      { label: "⚾ MLB Live", query: "MLB official live baseball" },
+      { label: "🎾 Tennis Live", query: "Tennis Channel official live" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ official live" }
     ]
   },
   youtubePanelQuery: "",
@@ -49,7 +50,7 @@ const config = {
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
   newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed?listType=search&list=Yahoo%20Sports%20live&autoplay=1&rel=0",
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
@@ -279,12 +280,14 @@ const liveMediaQueries = {
     "WFAA Dallas Live"
   ],
   sports: [
-    "CBS Sports HQ live",
-    "sports news live",
-    "ESPN sports news live",
-    "Fox Sports live",
-    "live sports highlights",
-    "NBA news live"
+    "Yahoo Sports live",
+    "PGA TOUR official live golf",
+    "NBA official live basketball",
+    "FIFA soccer official live",
+    "FIFA World Cup official live",
+    "MLB official live baseball",
+    "Tennis Channel official live",
+    "CBS Sports HQ official live"
   ]
 };
 
@@ -299,15 +302,40 @@ const fallbackLiveTvChannels = {
     { label: "WFAA Dallas", query: "WFAA Dallas Live" }
   ],
   sports: [
-    { label: "Yahoo Sports", query: "Yahoo Sports live" },
-    { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
-{ label: "⚽ Live Soccer", query: "soccer live match today" },
-{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
-{ label: "⚾ MLB Live", query: "MLB live baseball" },
-{ label: "🎾 Tennis Live", query: "tennis live match" },
-    { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
-  ]
+      { label: "Yahoo Sports", query: "Yahoo Sports live" },
+      { label: "⛳ Live Golf", query: "PGA TOUR official live golf" },
+      { label: "🏀 NBA Live", query: "NBA official live basketball" },
+      { label: "⚽ Live Soccer", query: "FIFA soccer official live" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official live" },
+      { label: "⚾ MLB Live", query: "MLB official live baseball" },
+      { label: "🎾 Tennis Live", query: "Tennis Channel official live" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ official live" }
+    ]
 };
+
+
+function getSportsQueryProfile(query = "") {
+  const q = String(query || "").toLowerCase();
+  if (q.includes("golf") || q.includes("pga")) return { allow: ["golf", "pga", "tour"], block: ["cowboys", "nfl", "football", "madden", "replay", "classic", "full game", "simulation", "sim", "old game"] };
+  if (q.includes("nba") || q.includes("basketball")) return { allow: ["nba", "basketball"], block: ["cowboys", "nfl", "football", "madden", "replay", "classic", "full game", "simulation", "sim", "old game"] };
+  if (q.includes("soccer") || q.includes("fifa") || q.includes("world cup")) return { allow: ["soccer", "fifa", "world cup", "football"], block: ["cowboys", "nfl", "madden", "replay", "classic", "full game", "simulation", "sim", "old game"] };
+  if (q.includes("mlb") || q.includes("baseball")) return { allow: ["mlb", "baseball"], block: ["cowboys", "nfl", "football", "madden", "replay", "classic", "full game", "simulation", "sim", "old game"] };
+  if (q.includes("tennis") || q.includes("atp") || q.includes("wta")) return { allow: ["tennis", "atp", "wta"], block: ["cowboys", "nfl", "football", "madden", "replay", "classic", "full game", "simulation", "sim", "old game"] };
+  if (q.includes("yahoo")) return { allow: ["yahoo", "sports"], block: ["cowboys full game", "classic cowboys", "madden", "simulation"] };
+  if (q.includes("cbs")) return { allow: ["cbs sports", "sports hq", "hq"], block: ["cowboys full game", "classic cowboys", "madden", "simulation", "old game"] };
+  return { allow: ["sports"], block: ["cowboys", "madden", "simulation", "classic", "full game", "old game"] };
+}
+
+function isGoodSportsResult(item, query = "") {
+  const title = String(item.snippet?.title || "").toLowerCase();
+  const channel = String(item.snippet?.channelTitle || "").toLowerCase();
+  const haystack = `${title} ${channel}`;
+  const alwaysBlock = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather", "newsmax"];
+  if (alwaysBlock.some(term => haystack.includes(term))) return false;
+  const profile = getSportsQueryProfile(query);
+  if (profile.block.some(term => haystack.includes(term))) return false;
+  return profile.allow.some(term => haystack.includes(term)) && item.id?.videoId;
+}
 
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
@@ -319,16 +347,7 @@ async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
     const items = json.items || [];
 
     if (kind === "sports") {
-      const blocked = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather"];
-      const sportsTerms = ["sports", "espn", "nba", "nfl", "mlb", "nhl", "cbs sports", "fox sports", "bleacher", "football", "basketball", "soccer", "golf", "pga", "mlb", "baseball", "tennis", "fifa"];
-      const match = items.find(item => {
-        const title = String(item.snippet?.title || "").toLowerCase();
-        const channel = String(item.snippet?.channelTitle || "").toLowerCase();
-        const haystack = `${title} ${channel}`;
-        const isBlocked = blocked.some(term => haystack.includes(term));
-        const isSports = sportsTerms.some(term => haystack.includes(term));
-        return !isBlocked && isSports && item.id?.videoId;
-      });
+      const match = items.find(item => isGoodSportsResult(item, query));
       return match?.id?.videoId || "";
     }
 
@@ -379,7 +398,11 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
     if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
     frame.src = buildYouTubeVideoUrl(videoId);
   } else {
-    frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : (kind === "sports" ? resolveSportsUrl() : resolveNewsUrl()));
+    if (kind === "sports") {
+      frame.src = buildYouTubeFallbackUrl(query || "Yahoo Sports live");
+    } else {
+      frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : resolveNewsUrl());
+    }
   }
 
   const title = byId("panelTitle");
@@ -439,7 +462,7 @@ function getLiveMediaFallback(kind) {
 }
 
 function getLiveMediaCacheKey(kind) {
-  return `stylLiveMedia_${kind}`;
+  return `stylLiveMedia_${kind}_v20260606`;
 }
 
 function readStoredLiveMedia(kind) {
