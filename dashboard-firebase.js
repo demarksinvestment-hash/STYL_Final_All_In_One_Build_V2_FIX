@@ -34,13 +34,13 @@ const config = {
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR official live golf" },
-      { label: "🏀 NBA Live", query: "NBA official live basketball" },
-      { label: "⚽ Live Soccer", query: "FIFA soccer official live" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official live" },
-      { label: "⚾ MLB Live", query: "MLB official live baseball" },
-      { label: "🎾 Tennis Live", query: "Tennis Channel official live" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ official live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "🏀 NBA Live", query: "NBA live basketball" },
+      { label: "⚽ Live Soccer", query: "soccer live match today" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
+      { label: "⚾ MLB Live", query: "MLB live baseball" },
+      { label: "🎾 Tennis Live", query: "tennis live match" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
     ]
   },
   youtubePanelQuery: "",
@@ -303,13 +303,13 @@ const fallbackLiveTvChannels = {
   ],
   sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR official live golf" },
-      { label: "🏀 NBA Live", query: "NBA official live basketball" },
-      { label: "⚽ Live Soccer", query: "FIFA soccer official live" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official live" },
-      { label: "⚾ MLB Live", query: "MLB official live baseball" },
-      { label: "🎾 Tennis Live", query: "Tennis Channel official live" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ official live" }
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "🏀 NBA Live", query: "NBA live basketball" },
+      { label: "⚽ Live Soccer", query: "soccer live match today" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
+      { label: "⚾ MLB Live", query: "MLB live baseball" },
+      { label: "🎾 Tennis Live", query: "tennis live match" },
+      { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
     ]
 };
 
@@ -330,32 +330,83 @@ function isGoodSportsResult(item, query = "") {
   const title = String(item.snippet?.title || "").toLowerCase();
   const channel = String(item.snippet?.channelTitle || "").toLowerCase();
   const haystack = `${title} ${channel}`;
-  const alwaysBlock = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather", "newsmax"];
+  const alwaysBlock = [
+    "republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather", "newsmax",
+    "cowboys", "dallas cowboys", "madden", "simulation", "simulated", "full game", "classic", "replay", "old game", "throwback"
+  ];
   if (alwaysBlock.some(term => haystack.includes(term))) return false;
   const profile = getSportsQueryProfile(query);
   if (profile.block.some(term => haystack.includes(term))) return false;
   return profile.allow.some(term => haystack.includes(term)) && item.id?.videoId;
 }
 
+function getNewsQueryProfile(query = "") {
+  const q = String(query || "").toLowerCase();
+  if (q.includes("abc")) return ["abc news", "abc news live"];
+  if (q.includes("nbc")) return ["nbc news now", "nbc news"];
+  if (q.includes("cbs")) return ["cbs news", "cbs news live"];
+  if (q.includes("bloomberg")) return ["bloomberg"];
+  if (q.includes("fox weather")) return ["fox weather"];
+  if (q.includes("wfaa")) return ["wfaa"];
+  return [];
+}
+
+function isGoodNewsResult(item, query = "") {
+  const title = String(item.snippet?.title || "").toLowerCase();
+  const channel = String(item.snippet?.channelTitle || "").toLowerCase();
+  const haystack = `${title} ${channel}`;
+  const allow = getNewsQueryProfile(query);
+  return item.id?.videoId && (!allow.length || allow.some(term => haystack.includes(term)));
+}
+
+async function getEmbeddableVideoIds(videoIds = []) {
+  if (!config.youtubeApiKey || !videoIds.length) return [];
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=status&id=${encodeURIComponent(videoIds.join(","))}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const res = await fetch(url);
+    if (!res.ok) return videoIds;
+    const json = await res.json();
+    return (json.items || [])
+      .filter(item => item.status?.embeddable !== false)
+      .map(item => item.id)
+      .filter(Boolean);
+  } catch (e) {
+    console.warn("Embeddable check failed", e);
+    return videoIds;
+  }
+}
+
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=8&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=10&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
     const res = await fetch(url);
     if (!res.ok) return "";
     const json = await res.json();
     const items = json.items || [];
-
-    if (kind === "sports") {
-      const match = items.find(item => isGoodSportsResult(item, query));
-      return match?.id?.videoId || "";
-    }
-
-    return items.find(item => item.id?.videoId)?.id?.videoId || "";
+    const filtered = kind === "sports"
+      ? items.filter(item => isGoodSportsResult(item, query))
+      : items.filter(item => isGoodNewsResult(item, query));
+    const ids = filtered.map(item => item.id?.videoId).filter(Boolean);
+    const embeddableIds = await getEmbeddableVideoIds(ids);
+    return embeddableIds[0] || "";
   } catch (e) {
     console.warn("Live channel lookup failed", query, e);
     return "";
   }
+}
+
+function buildSafeLiveSearchQuery(query = "", kind = "news") {
+  let q = String(query || "").trim();
+  if (!q) q = kind === "sports" ? "Yahoo Sports live" : "ABC News Live";
+  if (kind === "sports") {
+    const lower = q.toLowerCase();
+    const blocks = ["cowboys", "dallas cowboys", "madden", "simulation", "replay", "classic", "full game", "old game", "throwback"];
+    if (!blocks.some(term => lower.includes(`-${term}`))) {
+      q += " -cowboys -madden -simulation -replay -classic -\"full game\" -\"old game\"";
+    }
+  }
+  return q;
 }
 
 
@@ -395,14 +446,9 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
   const videoId = await findLiveMediaVideoIdByQuery(query, kind);
 
   if (videoId) {
-    if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
     frame.src = buildYouTubeVideoUrl(videoId);
   } else {
-    if (kind === "sports") {
-      frame.src = buildYouTubeFallbackUrl(query || "Yahoo Sports live");
-    } else {
-      frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : resolveNewsUrl());
-    }
+    frame.src = buildYouTubeFallbackUrl(buildSafeLiveSearchQuery(query, kind));
   }
 
   const title = byId("panelTitle");
@@ -524,7 +570,8 @@ async function loadLiveMediaFrame(kind = "news") {
   const frame = byId(kind === "sports" ? "sportsFrame" : "newsFrame");
   if (!frame) return;
 
-  const fallback = getLiveMediaFallback(kind);
+  const firstChannel = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || [])[0] || {};
+  const fallback = buildYouTubeFallbackUrl(buildSafeLiveSearchQuery(firstChannel.query || firstChannel.label || (kind === "sports" ? "Yahoo Sports live" : "ABC News Live"), kind));
 
   // Respect admin manual override first.
   if (kind === "news" && (config.newsLiveOverride || "").trim()) {
@@ -662,7 +709,7 @@ function buildYouTubeVideoUrl(videoId) {
 
 function buildYouTubeFallbackUrl(query) {
   const q = encodeURIComponent(String(query || "").trim() || "smooth jazz lounge music");
-  return `https://www.youtube.com/embed?listType=search&list=${q}&autoplay=1&rel=0`;
+  return `https://www.youtube.com/embed?listType=search&list=${q}&autoplay=1&rel=0&playsinline=1`;
 }
 
 function extractYouTubeVideoId(value) {
