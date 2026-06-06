@@ -22,7 +22,7 @@ const config = {
   musicRequestUrl: "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
-  youtubeApiKey: "AIzaSyC9fMTUpLY1N3v0RhcgAz8zaythw70Aw8o",
+  youtubeApiKey: "",
   liveTvChannels: {
     news: [
       { label: "ABC News Live", query: "ABC News Live" },
@@ -33,14 +33,12 @@ const config = {
       { label: "WFAA Dallas", query: "WFAA Dallas Live" }
     ],
     sports: [
-      { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live official golf" },
-      { label: "🏀 NBA Live", query: "NBA live official" },
-      { label: "⚽ Live Soccer", query: "FIFA live soccer official" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup official" },
-      { label: "⚾ MLB Live", query: "MLB live official" },
-      { label: "🎾 Tennis Live", query: "Tennis Channel live official" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ live official" }
+      { label: "CBS Sports HQ", query: "CBS Sports HQ sports live" },
+      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+      { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+      { label: "Fox Sports", query: "Fox Sports live" },
+      { label: "Live Highlights", query: "live sports highlights" },
+      { label: "NBA News Live", query: "NBA news live" }
     ]
   },
   youtubePanelQuery: "",
@@ -300,154 +298,43 @@ const fallbackLiveTvChannels = {
     { label: "WFAA Dallas", query: "WFAA Dallas Live" }
   ],
   sports: [
-    { label: "Yahoo Sports", query: "Yahoo Sports live" },
-    { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
-{ label: "⚽ Live Soccer", query: "soccer live match today" },
-{ label: "🏆 FIFA World Cup", query: "FIFA World Cup live soccer" },
-{ label: "⚾ MLB Live", query: "MLB live baseball" },
-{ label: "🎾 Tennis Live", query: "tennis live match" },
-    { label: "CBS Sports HQ", query: "CBS Sports HQ live" }
+    { label: "CBS Sports HQ", query: "CBS Sports HQ sports live" },
+    { label: "ESPN-Style Sports", query: "ESPN sports news live" },
+    { label: "Fox Sports", query: "Fox Sports live stream sports" },
+    { label: "NBA News Live", query: "NBA news live today" },
+    { label: "NFL News Live", query: "NFL news live today" },
+    { label: "Sports Highlights", query: "sports highlights live today" }
   ]
 };
 
-function getLiveTvCategory(kind = "news", query = "", label = "") {
-  const text = `${label || ""} ${query || ""}`.toLowerCase();
-  if (kind !== "sports") {
-    if (text.includes("abc")) return "abc";
-    if (text.includes("nbc") || text.includes("news now")) return "nbc";
-    if (text.includes("cbs news")) return "cbsnews";
-    if (text.includes("bloomberg")) return "bloomberg";
-    if (text.includes("fox weather")) return "foxweather";
-    if (text.includes("wfaa")) return "wfaa";
-    return "news";
-  }
-  if (text.includes("yahoo")) return "yahoo";
-  if (text.includes("golf") || text.includes("pga")) return "golf";
-  if (text.includes("nba") || text.includes("basketball")) return "nba";
-  if (text.includes("soccer")) return "soccer";
-  if (text.includes("fifa") || text.includes("world cup")) return "fifa";
-  if (text.includes("mlb") || text.includes("baseball")) return "mlb";
-  if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "tennis";
-  if (text.includes("cbs sports")) return "cbssports";
-  return "sports";
-}
-
-function getLiveTvSearchQueries(kind = "news", query = "", label = "") {
-  const base = String(query || label || "").trim();
-  const category = getLiveTvCategory(kind, query, label);
-  const map = {
-    abc: ["ABC News Live official", "ABC News live now"],
-    nbc: ["NBC News NOW live official", "NBC News live now"],
-    cbsnews: ["CBS News live official", "CBS News 24/7 live"],
-    bloomberg: ["Bloomberg Television live official", "Bloomberg Global Financial News live"],
-    foxweather: ["FOX Weather live official", "Fox Weather live stream"],
-    wfaa: ["WFAA Dallas live official", "WFAA Dallas news live"],
-    yahoo: ["Yahoo Sports live", "Yahoo Sports official"],
-    golf: ["PGA TOUR live official golf", "PGA TOUR live", "Golf Channel live official"],
-    nba: ["NBA live official", "NBA TV live official", "NBA live basketball highlights today"],
-    soccer: ["FIFA live soccer official", "FOX Soccer live official", "soccer live match official"],
-    fifa: ["FIFA World Cup official", "FIFA official live", "FIFA World Cup highlights official"],
-    mlb: ["MLB live official", "MLB Network live official", "MLB live baseball highlights today"],
-    tennis: ["Tennis Channel live official", "ATP Tour live official", "tennis live match official"],
-    cbssports: ["CBS Sports HQ live official", "CBS Sports live official"]
-  };
-  const arr = map[category] || [base];
-  return [...new Set([base, ...arr].filter(Boolean))];
-}
-
-function isBadLiveTvResult(item = {}, kind = "news", query = "", label = "") {
-  const title = String(item.snippet?.title || "").toLowerCase();
-  const channel = String(item.snippet?.channelTitle || "").toLowerCase();
-  const description = String(item.snippet?.description || "").toLowerCase();
-  const haystack = `${title} ${channel} ${description}`;
-  const category = getLiveTvCategory(kind, query, label);
-
-  const badCommon = ["madden", "simulation", "simulated", "full game replay", "classic game", "old game", "throwback", "watch party", "reaction stream"];
-  if (badCommon.some(term => haystack.includes(term))) return true;
-
-  // This stops the old Cowboys stream from appearing under golf, soccer, NBA, MLB, tennis, or news.
-  if (haystack.includes("cowboys") && !["nfl", "football", "cbssports", "yahoo"].includes(category)) return true;
-
-  if (kind === "news") {
-    const required = {
-      abc: ["abc news", "abc"],
-      nbc: ["nbc news", "nbc news now", "news now"],
-      cbsnews: ["cbs news", "cbs news 24/7"],
-      bloomberg: ["bloomberg"],
-      foxweather: ["fox weather"],
-      wfaa: ["wfaa"]
-    }[category];
-    if (required && !required.some(term => haystack.includes(term))) return true;
-    return false;
-  }
-
-  const requiredSports = {
-    golf: ["golf", "pga", "tour"],
-    nba: ["nba", "basketball"],
-    soccer: ["soccer", "fifa", "football"],
-    fifa: ["fifa", "world cup"],
-    mlb: ["mlb", "baseball"],
-    tennis: ["tennis", "atp", "wta"],
-    cbssports: ["cbs sports", "sports hq"],
-    yahoo: ["yahoo", "sports"]
-  }[category];
-  if (requiredSports && !requiredSports.some(term => haystack.includes(term))) return true;
-
-  const blockedNews = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather"];
-  if (!["yahoo", "cbssports"].includes(category) && blockedNews.some(term => haystack.includes(term))) return true;
-  return false;
-}
-
-async function findEmbeddableYouTubeVideo(query = "", kind = "news", label = "", liveOnly = true) {
+async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
   try {
-    const liveParam = liveOnly ? "&eventType=live" : "";
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video${liveParam}&maxResults=10&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
-    const res = await fetch(searchUrl);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&eventType=live&maxResults=8&safeSearch=moderate&q=${encodeURIComponent(query)}&key=${encodeURIComponent(config.youtubeApiKey)}`;
+    const res = await fetch(url);
     if (!res.ok) return "";
     const json = await res.json();
-    const searchItems = json.items || [];
-    const ids = searchItems.map(item => item.id?.videoId).filter(Boolean);
-    if (!ids.length) return "";
+    const items = json.items || [];
 
-    const detailUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,status,liveStreamingDetails&id=${encodeURIComponent(ids.join(","))}&key=${encodeURIComponent(config.youtubeApiKey)}`;
-    const detailRes = await fetch(detailUrl);
-    if (!detailRes.ok) return "";
-    const detailJson = await detailRes.json();
-    const detailMap = new Map((detailJson.items || []).map(item => [item.id, item]));
-
-    for (const id of ids) {
-      const item = detailMap.get(id);
-      if (!item) continue;
-      if (item.status?.embeddable !== true) continue;
-      if (item.status?.privacyStatus && item.status.privacyStatus !== "public") continue;
-      if (isBadLiveTvResult(item, kind, query, label)) continue;
-      return id;
+    if (kind === "sports") {
+      const blocked = ["republic tv", "abc news", "nbc news", "cbs news", "bloomberg", "fox weather", "wfaa", "weather"];
+      const sportsTerms = ["sports", "espn", "nba", "nfl", "mlb", "nhl", "cbs sports", "fox sports", "bleacher", "football", "basketball", "soccer"];
+      const match = items.find(item => {
+        const title = String(item.snippet?.title || "").toLowerCase();
+        const channel = String(item.snippet?.channelTitle || "").toLowerCase();
+        const haystack = `${title} ${channel}`;
+        const isBlocked = blocked.some(term => haystack.includes(term));
+        const isSports = sportsTerms.some(term => haystack.includes(term));
+        return !isBlocked && isSports && item.id?.videoId;
+      });
+      return match?.id?.videoId || "";
     }
+
+    return items.find(item => item.id?.videoId)?.id?.videoId || "";
   } catch (e) {
-    console.warn("Embeddable YouTube lookup failed", query, e);
+    console.warn("Live channel lookup failed", query, e);
+    return "";
   }
-  return "";
-}
-
-async function findLiveMediaVideoIdByQuery(query = "", kind = "news", label = "") {
-  if (!config.youtubeApiKey || !query) return "";
-  const queries = getLiveTvSearchQueries(kind, query, label);
-
-  // First try true live streams.
-  for (const q of queries) {
-    const videoId = await findEmbeddableYouTubeVideo(q, kind, label, true);
-    if (videoId) return videoId;
-  }
-
-  // If no legal embeddable live stream is available, use the newest embeddable official/related video.
-  // This avoids the ugly "Video unavailable" screen.
-  for (const q of queries) {
-    const videoId = await findEmbeddableYouTubeVideo(q, kind, label, false);
-    if (videoId) return videoId;
-  }
-
-  return "";
 }
 
 
@@ -484,13 +371,13 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
     });
   }
 
-  const videoId = await findLiveMediaVideoIdByQuery(query, kind, statusLabel);
+  const videoId = await findLiveMediaVideoIdByQuery(query, kind);
 
   if (videoId) {
+    if (typeof storeLiveMedia === "function") storeLiveMedia(kind, videoId);
     frame.src = buildYouTubeVideoUrl(videoId);
   } else {
-    // Do not fall back to the old ABC/Cowboys default video. Show a YouTube search playlist for that station instead.
-    frame.src = buildYouTubeFallbackUrl(`${statusLabel} ${query}`);
+    frame.src = forceAutoplay(typeof getLiveMediaFallback === "function" ? getLiveMediaFallback(kind) : (kind === "sports" ? resolveSportsUrl() : resolveNewsUrl()));
   }
 
   const title = byId("panelTitle");
@@ -502,27 +389,13 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
   showActiveSoundOverlay();
 }
 
-function getLiveChannelIcon(kind = "news", channel = {}) {
-  if (kind !== "sports") return "📺";
-  const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
-  if (text.includes("golf") || text.includes("pga")) return "⛳";
-  if (text.includes("soccer") || text.includes("fifa") || text.includes("world cup") || text.includes("football club")) return "⚽";
-  if (text.includes("nba") || text.includes("basketball")) return "🏀";
-  if (text.includes("mlb") || text.includes("baseball")) return "⚾";
-  if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "🎾";
-  if (text.includes("nfl") || text.includes("cowboys") || text.includes("american football")) return "🏈";
-  if (text.includes("yahoo")) return "🏟️";
-  if (text.includes("cbs")) return "📡";
-  return "🏆";
-}
-
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
   const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
   grid.innerHTML = channels.map((channel) => `
     <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
-      <span>${getLiveChannelIcon(kind, channel)}</span>
+      <span>${kind === "sports" ? "🏈" : "📺"}</span>
       <strong>${channel.label}</strong>
       <small>Tap to watch live</small>
     </button>
@@ -550,7 +423,7 @@ function getLiveMediaFallback(kind) {
 }
 
 function getLiveMediaCacheKey(kind) {
-  return `stylLiveMedia_${kind}`;
+  return `stylLiveMedia_lastWorking_${kind}`;
 }
 
 function readStoredLiveMedia(kind) {
@@ -628,8 +501,7 @@ async function loadLiveMediaFrame(kind = "news") {
   if (videoId) {
     frame.src = buildYouTubeVideoUrl(videoId);
   } else {
-    const firstChannel = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || [])[0] || {};
-    frame.src = buildYouTubeFallbackUrl(`${firstChannel.label || kind} ${firstChannel.query || ""}`);
+    frame.src = forceAutoplay(fallback);
   }
 }
 
@@ -1678,8 +1550,10 @@ function applyLiveTvSyncFromProfile() {
   const query = String(sync.query || "").trim();
   const label = String(sync.label || query || (kind === "sports" ? "Live Sports" : "Live News")).trim();
   const nonce = String(sync.nonce || "").trim();
+  const updatedAt = Date.parse(sync.updatedAt || "");
+  const isFresh = updatedAt && (Date.now() - updatedAt < 5 * 60 * 1000);
 
-  if (!query || !nonce || nonce === liveTvLastSyncNonce) return;
+  if (!query || !nonce || nonce === liveTvLastSyncNonce || !isFresh) return;
 
   liveTvLastSyncNonce = nonce;
   showView(kind, kind === "sports" ? "Live Sports" : "Live News", kind === "sports" ? "sportsBtn" : "newsBtn");
