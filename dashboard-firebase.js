@@ -33,16 +33,16 @@ const config = {
     { label: "WFAA Dallas", query: "WFAA Dallas official live news" }
   ],
   sports: [
-    { label: "🏈 Football", query: "NFL official highlights today" },
-    { label: "🏀 Basketball", query: "NBA official highlights today" },
-    { label: "⚾ MLB Live", query: "MLB official highlights today" },
-    { label: "🎾 Tennis Live", query: "ATP WTA tennis official highlights today" },
-    { label: "⛳ Live Golf", query: "PGA TOUR official highlights today" },
-    { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today" },
-    { label: "🏆 FIFA World Cup", query: "FIFA World Cup official highlights" }
-  ]
-},
-  youtubePanelQuery: "",
+  { label: "🏈 Football", query: "NFL official highlights today" },
+  { label: "🏀 Basketball", query: "NBA official highlights today" },
+  { label: "⚾ MLB Live", query: "MLB official highlights today" },
+  { label: "🎾 Tennis Live", query: "ATP WTA official tennis highlights today" },
+  { label: "⛳ Live Golf", query: "PGA TOUR official highlights today Golf Channel" },
+  { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today OR Telemundo Deportes soccer highlights" },
+  { label: "🏆 FIFA World Cup", query: "FIFA official World Cup highlights" }
+]
+};
+youtubePanelQuery: "",
   youtubePanelVideoId: "",
   requestQueue: [],
   bookingUrl: "https://stylblackcar.com/",
@@ -299,14 +299,14 @@ const fallbackLiveTvChannels = {
     { label: "WFAA Dallas", query: "WFAA Dallas official live news" }
   ],
   sports: [
-    { label: "🏈 Football", query: "NFL official highlights today" },
-    { label: "🏀 Basketball", query: "NBA official highlights today" },
-    { label: "⚾ MLB Live", query: "MLB official highlights today" },
-    { label: "🎾 Tennis Live", query: "ATP WTA tennis official highlights today" },
-    { label: "⛳ Live Golf", query: "PGA TOUR official highlights today" },
-    { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today" },
-    { label: "🏆 FIFA World Cup", query: "FIFA World Cup official highlights" }
-  ]
+  { label: "🏈 Football", query: "NFL official highlights today" },
+  { label: "🏀 Basketball", query: "NBA official highlights today" },
+  { label: "⚾ MLB Live", query: "MLB official highlights today" },
+  { label: "🎾 Tennis Live", query: "ATP WTA official tennis highlights today" },
+  { label: "⛳ Live Golf", query: "PGA TOUR official highlights today Golf Channel" },
+  { label: "⚽ Live Soccer", query: "FOX Soccer official highlights today OR Telemundo Deportes soccer highlights" },
+  { label: "🏆 FIFA World Cup", query: "FIFA official World Cup highlights" }
+]
 };
 async function findLiveMediaVideoIdByQuery(query = "", kind = "news") {
   if (!config.youtubeApiKey || !query) return "";
