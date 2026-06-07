@@ -98,12 +98,12 @@
                     <div class="status-value" id="wifiCardName">STYL-Guest</div>
                     <div class="status-sub" id="wifiCardPass">RideInSTYL</div>
                   </div>
-                  <div class="status-card chauffeur-profile-card">
+                  <div class="status-card chauffeur-card">
                     <div class="status-label">Chauffeur</div>
-                    <img src="ayo.png" alt="Ayo, STYL chauffeur" class="chauffeur-photo" />
-                    <div class="status-value" id="driverCard">Ayo</div>
-                    <div class="chauffeur-role">Founder &amp; Chauffeur</div>
-                    <div class="chauffeur-company">STYL Black Car Service</div>
+                    <img src="ayo.png" alt="Ayo - STYL Chauffeur" class="chauffeur-photo" />
+                    <div class="status-value chauffeur-name" id="driverCard">Ayo</div>
+                    <div class="status-sub chauffeur-role">Founder &amp; Chauffeur</div>
+                    <div class="status-sub chauffeur-company">STYL Black Car Service</div>
                     <div class="status-sub">Professional private service</div>
                   </div>
                   <div class="status-card">
@@ -155,10 +155,33 @@
               </div>
             </section>
             <section id="sportsView" class="view">
+              <div class="sports-hub-panel">
+                <div class="sports-ticker" aria-label="Sports ticker">
+                  <span id="sportsTickerText">🏆 FIFA World Cup 2026 Dallas Center • ⚽ Live Soccer • ⛳ Live Golf • 🎾 Live Tennis • 🏀 NBA • ⚾ MLB • 🏈 NFL • Tap a category below to choose official live coverage</span>
+                </div>
+                <div class="sports-category-pills" id="sportsCategoryPills" aria-label="Sports categories">
+                  <button type="button" class="sports-category-pill active" data-sports-category="all">All</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="worldcup">🏆 World Cup</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="soccer">⚽ Soccer</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="golf">⛳ Golf</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="tennis">🎾 Tennis</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="nba">🏀 NBA</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="mlb">⚾ MLB</button>
+                  <button type="button" class="sports-category-pill" data-sports-category="nfl">🏈 NFL</button>
+                </div>
+                <div class="worldcup-center-card" id="worldCupCenterCard">
+                  <div>
+                    <div class="worldcup-kicker">Dallas Visitor Edition</div>
+                    <strong>🏆 FIFA World Cup 2026 Center</strong>
+                    <p>Live official coverage, highlights, Dallas match info, AT&amp;T Stadium visitor guidance, transportation tips, and fan updates.</p>
+                  </div>
+                  <button type="button" class="worldcup-watch-btn" data-worldcup-watch>Watch World Cup Coverage</button>
+                </div>
+              </div>
               <div class="live-channel-grid-wrap">
                 <div class="live-channel-head">
                   <strong>Live Sports</strong>
-                  <span>Choose a station</span>
+                  <span>Choose official coverage</span>
                 </div>
                 <div id="sportsChannelGrid" class="live-channel-grid"></div>
               </div>
