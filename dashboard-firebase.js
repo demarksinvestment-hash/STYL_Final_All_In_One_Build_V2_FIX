@@ -30,17 +30,24 @@ const config = {
       { label: "CBS News Live", query: "CBS News Live" },
       { label: "Bloomberg Live", query: "Bloomberg Live" },
       { label: "Fox Weather", query: "Fox Weather Live" },
-      { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+      { label: "WFAA Dallas", query: "WFAA Dallas Live" },
+      { label: "Local Dallas News", query: "Dallas local news live" }
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
       { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live official" },
-      { label: "⚽ Live Soccer", query: "FIFA live soccer FOX Soccer Telemundo Deportes" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf Golf Channel" },
-      { label: "🎾 Live Tennis", query: "ATP Tennis live WTA Tennis live" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live" },
+      { label: "🏆 FIFA Official", query: "FIFA official live" },
+      { label: "⚽ Live Soccer", query: "FIFA live soccer" },
+      { label: "⚽ FOX Soccer", query: "FOX Soccer live" },
+      { label: "⚽ Telemundo Deportes", query: "Telemundo Deportes live" },
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "⛳ Golf Channel", query: "Golf Channel live" },
+      { label: "🎾 Live Tennis", query: "ATP Tennis live" },
+      { label: "🎾 WTA Tennis", query: "WTA Tennis live" },
       { label: "🏀 NBA Live", query: "NBA live basketball" },
-      { label: "⚾ MLB Live", query: "MLB live baseball" }
+      { label: "⚾ MLB Live", query: "MLB live baseball" },
+      { label: "🏈 NFL Live", query: "NFL live football" }
     ]
   },
   youtubePanelQuery: "",
@@ -49,8 +56,8 @@ const config = {
   bookingUrl: "https://stylblackcar.com/",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
-  newsUrl: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1&mute=1&enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/live_stream?channel=UCn8zNIfYAQNdrFRrr8oibKw&autoplay=1&mute=1&enablejsapi=1&rel=0",
+  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?enablejsapi=1&rel=0",
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
@@ -117,6 +124,7 @@ let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
 let liveTvLastSyncNonce = "";
+let activeSportsCategory = "all";
 
 // STYL Live TV safety reset: old cached video IDs caused stale ABC/Cowboys playback.
 try {
@@ -298,18 +306,22 @@ const liveMediaQueries = {
     "CBS News Live",
     "Bloomberg Live",
     "Fox Weather Live",
-    "WFAA Dallas Live"
+    "WFAA Dallas Live",
+    "Dallas local news live"
   ],
   sports: [
-    "CBS Sports HQ live",
-    "FIFA World Cup 2026 live official",
+    "FIFA World Cup 2026 live",
+    "FIFA official live",
     "FIFA live soccer",
     "PGA TOUR live golf",
     "Golf Channel live",
     "ATP Tennis live",
     "WTA Tennis live",
     "NBA live basketball",
-    "MLB live baseball"
+    "MLB live baseball",
+    "NFL live football",
+    "CBS Sports HQ live",
+    "Yahoo Sports live"
   ]
 };
 
@@ -430,21 +442,68 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 function getLiveChannelIcon(kind = "news", channel = {}) {
   if (kind !== "sports") return "📺";
   const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
-  if (text.includes("world cup")) return "🏆";
+  if (text.includes("world cup") || text.includes("fifa world cup") || text.includes("fifa official")) return "🏆";
   if (text.includes("golf") || text.includes("pga")) return "⛳";
-  if (text.includes("soccer") || text.includes("fifa")) return "⚽";
+  if (text.includes("soccer") || text.includes("telemundo") || text.includes("fifa")) return "⚽";
   if (text.includes("nba") || text.includes("basketball")) return "🏀";
   if (text.includes("mlb") || text.includes("baseball")) return "⚾";
   if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "🎾";
+  if (text.includes("nfl") || text.includes("football")) return "🏈";
   if (text.includes("yahoo")) return "🏟️";
   if (text.includes("cbs")) return "📡";
-  return "🏈";
+  return "🏟️";
+}
+
+function getSportsCategory(channel = {}) {
+  const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
+  if (text.includes("world cup") || text.includes("fifa world cup") || text.includes("fifa official")) return "worldcup";
+  if (text.includes("soccer") || text.includes("telemundo") || text.includes("fifa")) return "soccer";
+  if (text.includes("golf") || text.includes("pga")) return "golf";
+  if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "tennis";
+  if (text.includes("nba") || text.includes("basketball")) return "nba";
+  if (text.includes("mlb") || text.includes("baseball")) return "mlb";
+  if (text.includes("nfl") || text.includes("football")) return "nfl";
+  return "all";
+}
+
+function filterSportsChannels(channels = []) {
+  if (activeSportsCategory === "all") return channels;
+  return channels.filter(channel => getSportsCategory(channel) === activeSportsCategory);
+}
+
+function initSportsHubControls() {
+  const pills = byId("sportsCategoryPills");
+  if (pills && !pills.dataset.bound) {
+    pills.dataset.bound = "1";
+    pills.querySelectorAll(".sports-category-pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeSportsCategory = btn.dataset.sportsCategory || "all";
+        pills.querySelectorAll(".sports-category-pill").forEach(pill => pill.classList.toggle("active", pill === btn));
+        renderLiveTvChannelGrid("sports");
+        const card = byId("worldCupCenterCard");
+        if (card) card.classList.toggle("compact", activeSportsCategory !== "worldcup");
+      });
+    });
+  }
+  const worldCupWatch = document.querySelector("[data-worldcup-watch]");
+  if (worldCupWatch && !worldCupWatch.dataset.bound) {
+    worldCupWatch.dataset.bound = "1";
+    worldCupWatch.addEventListener("click", () => {
+      activeSportsCategory = "worldcup";
+      if (pills) {
+        pills.querySelectorAll(".sports-category-pill").forEach(pill => pill.classList.toggle("active", pill.dataset.sportsCategory === "worldcup"));
+      }
+      renderLiveTvChannelGrid("sports");
+      loadLiveTvChannel("sports", "FIFA World Cup 2026 live", "🏆 FIFA World Cup", true);
+    });
+  }
 }
 
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
-  const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
+  const rawChannels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
+  const channels = kind === "sports" ? filterSportsChannels(rawChannels) : rawChannels;
   grid.innerHTML = channels.map((channel) => `
     <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
       <span>${getLiveChannelIcon(kind, channel)}</span>
@@ -465,6 +524,7 @@ function renderLiveTvChannelGrid(kind = "news") {
 }
 
 function initLiveTvChannelGrids() {
+  initSportsHubControls();
   renderLiveTvChannelGrid("news");
   renderLiveTvChannelGrid("sports");
 }
