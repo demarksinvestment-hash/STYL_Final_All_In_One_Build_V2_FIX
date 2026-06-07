@@ -2104,3 +2104,23 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   .chauffeur-photo{width:120px;height:120px;}
   .chauffeur-role,.chauffeur-company{font-size:2vw;}
 }
+.chauffeur-photo{
+  width:220px;
+  height:260px;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+  margin:10px auto 12px auto;
+  border-radius:22px;
+  border:2px solid rgba(212,175,55,.85);
+  padding:4px;
+  background:linear-gradient(180deg, rgba(255,220,130,.14), rgba(0,0,0,.35));
+  box-shadow:
+    0 0 22px rgba(212,175,55,.45),
+    0 0 45px rgba(212,175,55,.22);
+}
+
+.chauffeur-card,
+.status-card.chauffeur-card{
+  text-align:center;
+}
