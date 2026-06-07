@@ -34,10 +34,7 @@ const config = {
       { label: "Local Dallas News", query: "Dallas local news live" }
     ],
     sports: [
-      { label: "Yahoo Sports", query: "Yahoo Sports live" },
-      { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
       { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live" },
-      { label: "🏆 FIFA Official", query: "FIFA official live" },
       { label: "⚽ Live Soccer", query: "FIFA live soccer" },
       { label: "⚽ FOX Soccer", query: "FOX Soccer live" },
       { label: "⚽ Telemundo Deportes", query: "Telemundo Deportes live" },
@@ -47,7 +44,9 @@ const config = {
       { label: "🎾 WTA Tennis", query: "WTA Tennis live" },
       { label: "🏀 NBA Live", query: "NBA live basketball" },
       { label: "⚾ MLB Live", query: "MLB live baseball" },
-      { label: "🏈 NFL Live", query: "NFL live football" }
+      { label: "🏈 NFL Live", query: "NFL live" },
+      { label: "📡 CBS Sports HQ", query: "CBS Sports HQ live" },
+      { label: "🏟️ Yahoo Sports", query: "Yahoo Sports live" }
     ]
   },
   youtubePanelQuery: "",
@@ -56,8 +55,8 @@ const config = {
   bookingUrl: "https://stylblackcar.com/",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
-  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?enablejsapi=1&rel=0",
+  newsUrl: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed/live_stream?channel=UCn8zNIfYAQNdrFRrr8oibKw&enablejsapi=1&rel=0",
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
@@ -124,7 +123,6 @@ let suppressRemoteCommand = false;
 let suppressBroadcast = false;
 let dbRef = null;
 let liveTvLastSyncNonce = "";
-let activeSportsCategory = "all";
 
 // STYL Live TV safety reset: old cached video IDs caused stale ABC/Cowboys playback.
 try {
@@ -306,22 +304,15 @@ const liveMediaQueries = {
     "CBS News Live",
     "Bloomberg Live",
     "Fox Weather Live",
-    "WFAA Dallas Live",
-    "Dallas local news live"
+    "WFAA Dallas Live"
   ],
   sports: [
-    "FIFA World Cup 2026 live",
-    "FIFA official live",
-    "FIFA live soccer",
-    "PGA TOUR live golf",
-    "Golf Channel live",
-    "ATP Tennis live",
-    "WTA Tennis live",
-    "NBA live basketball",
-    "MLB live baseball",
-    "NFL live football",
     "CBS Sports HQ live",
-    "Yahoo Sports live"
+    "sports news live",
+    "ESPN sports news live",
+    "Fox Sports live",
+    "live sports highlights",
+    "NBA news live"
   ]
 };
 
@@ -442,68 +433,20 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 function getLiveChannelIcon(kind = "news", channel = {}) {
   if (kind !== "sports") return "📺";
   const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
-  if (text.includes("world cup") || text.includes("fifa world cup") || text.includes("fifa official")) return "🏆";
   if (text.includes("golf") || text.includes("pga")) return "⛳";
-  if (text.includes("soccer") || text.includes("telemundo") || text.includes("fifa")) return "⚽";
+  if (text.includes("soccer") || text.includes("fifa") || text.includes("world cup")) return "⚽";
   if (text.includes("nba") || text.includes("basketball")) return "🏀";
   if (text.includes("mlb") || text.includes("baseball")) return "⚾";
   if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "🎾";
-  if (text.includes("nfl") || text.includes("football")) return "🏈";
   if (text.includes("yahoo")) return "🏟️";
   if (text.includes("cbs")) return "📡";
-  return "🏟️";
-}
-
-function getSportsCategory(channel = {}) {
-  const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
-  if (text.includes("world cup") || text.includes("fifa world cup") || text.includes("fifa official")) return "worldcup";
-  if (text.includes("soccer") || text.includes("telemundo") || text.includes("fifa")) return "soccer";
-  if (text.includes("golf") || text.includes("pga")) return "golf";
-  if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "tennis";
-  if (text.includes("nba") || text.includes("basketball")) return "nba";
-  if (text.includes("mlb") || text.includes("baseball")) return "mlb";
-  if (text.includes("nfl") || text.includes("football")) return "nfl";
-  return "all";
-}
-
-function filterSportsChannels(channels = []) {
-  if (activeSportsCategory === "all") return channels;
-  return channels.filter(channel => getSportsCategory(channel) === activeSportsCategory);
-}
-
-function initSportsHubControls() {
-  const pills = byId("sportsCategoryPills");
-  if (pills && !pills.dataset.bound) {
-    pills.dataset.bound = "1";
-    pills.querySelectorAll(".sports-category-pill").forEach(btn => {
-      btn.addEventListener("click", () => {
-        activeSportsCategory = btn.dataset.sportsCategory || "all";
-        pills.querySelectorAll(".sports-category-pill").forEach(pill => pill.classList.toggle("active", pill === btn));
-        renderLiveTvChannelGrid("sports");
-        const card = byId("worldCupCenterCard");
-        if (card) card.classList.toggle("compact", activeSportsCategory !== "worldcup");
-      });
-    });
-  }
-  const worldCupWatch = document.querySelector("[data-worldcup-watch]");
-  if (worldCupWatch && !worldCupWatch.dataset.bound) {
-    worldCupWatch.dataset.bound = "1";
-    worldCupWatch.addEventListener("click", () => {
-      activeSportsCategory = "worldcup";
-      if (pills) {
-        pills.querySelectorAll(".sports-category-pill").forEach(pill => pill.classList.toggle("active", pill.dataset.sportsCategory === "worldcup"));
-      }
-      renderLiveTvChannelGrid("sports");
-      loadLiveTvChannel("sports", "FIFA World Cup 2026 live", "🏆 FIFA World Cup", true);
-    });
-  }
+  return "🏈";
 }
 
 function renderLiveTvChannelGrid(kind = "news") {
   const grid = byId(kind === "sports" ? "sportsChannelGrid" : "newsChannelGrid");
   if (!grid) return;
-  const rawChannels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
-  const channels = kind === "sports" ? filterSportsChannels(rawChannels) : rawChannels;
+  const channels = (config.liveTvChannels?.[kind] || fallbackLiveTvChannels[kind] || []);
   grid.innerHTML = channels.map((channel) => `
     <button type="button" class="live-channel-card" data-kind="${kind}" data-query="${channel.query}" data-label="${channel.label}">
       <span>${getLiveChannelIcon(kind, channel)}</span>
@@ -524,7 +467,6 @@ function renderLiveTvChannelGrid(kind = "news") {
 }
 
 function initLiveTvChannelGrids() {
-  initSportsHubControls();
   renderLiveTvChannelGrid("news");
   renderLiveTvChannelGrid("sports");
 }
@@ -1279,7 +1221,7 @@ function syncLocalAutoRequestQueue(data = {}) {
   if (!requestQueueActive) {
     if (requestQueueIndex >= requestQueue.length) requestQueueIndex = Math.max(0, requestQueue.length - appendItems.length);
     requestQueueActive = true;
-    showView("youtube", "YouTube Lounge", "youtubeBtn");
+    showView("youtube", "Video Lounge", "youtubeBtn");
     setYouTubePanelStatus("New rider request received. Starting auto queue.");
     setTimeout(playCurrentQueueItem, 350);
   } else {
@@ -1339,7 +1281,7 @@ function renderRequestQueuePanel() {
         requestQueueIndex = index;
         requestQueueActive = true;
         pauseMusicPlaylistForRequests();
-        showView("youtube", "YouTube Lounge", "youtubeBtn");
+        showView("youtube", "Video Lounge", "youtubeBtn");
         playCurrentQueueItem();
       }
     });
@@ -1371,7 +1313,7 @@ function updateContinuousRequestQueue(queue = []) {
   if (!requestQueueActive) {
     requestQueueActive = true;
     if (requestQueueIndex >= requestQueue.length) requestQueueIndex = 0;
-    showView("youtube", "YouTube Lounge", "youtubeBtn");
+    showView("youtube", "Video Lounge", "youtubeBtn");
     setTimeout(playCurrentQueueItem, 350);
   } else {
     setYouTubePanelStatus(`Queue updated live: ${requestQueue.length} requests`);
@@ -1392,7 +1334,7 @@ function startRequestQueue(queue = [], continuous = false) {
   }
 
   pauseMusicPlaylistForRequests();
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  showView("youtube", "Video Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Playing request queue 1 of ${requestQueue.length}`);
   setTimeout(playCurrentQueueItem, 350);
 }
@@ -1419,7 +1361,7 @@ async function playCurrentQueueItem() {
 
   clearRequestQueueTimer();
   const item = requestQueue[requestQueueIndex] || {};
-  showView("youtube", "YouTube Lounge", "youtubeBtn");
+  showView("youtube", "Video Lounge", "youtubeBtn");
   setYouTubePanelStatus(`Loading request queue ${requestQueueIndex + 1} of ${requestQueue.length}: ${item.label || item.query || "Requested song"}`);
 
   const videoId = await resolveRequestQueueVideoId(item);
@@ -1689,10 +1631,10 @@ function applyProfile(data = {}) {
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
-      else if (cmd === "youtubepanel") { showView("youtube", "YouTube Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
+      else if (cmd === "youtubepanel") { showView("youtube", "Video Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
       else if (cmd === "youtubequeuecontinuous") { updateContinuousRequestQueue(config.requestQueue || []); }
-      else if (cmd === "youtube") showView("youtube", "YouTube Lounge", "youtubeBtn");
+      else if (cmd === "youtube") showView("youtube", "Video Lounge", "youtubeBtn");
       else if (cmd === "book") showView("book", "Book Next Ride", "bookBtn");
       else if (cmd === "vip") showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers.");
       else if (cmd === "unmute") { playAndUnmuteActiveMediaPlayer(); }
@@ -1720,7 +1662,7 @@ function initFirebaseSync() {
 function initTabs() {
   const tabs = [
     ["homeBtn","home","STYL Home"],
-    ["youtubeBtn","youtube","YouTube Lounge"],
+    ["youtubeBtn","youtube","Video Lounge"],
     ["newsBtn","news","Live News"],
     ["sportsBtn","sports","Live Sports"],
     ["musicBtn","music","Play Music"],
@@ -1769,7 +1711,7 @@ function initSwipe() {
       const next = dx < 0 ? (idx + 1) % viewNames.length : (idx - 1 + viewNames.length) % viewNames.length;
       const map = {
         home:["STYL Home","homeBtn"],
-        youtube:["YouTube Lounge","youtubeBtn"],
+        youtube:["Video Lounge","youtubeBtn"],
         news:["Live News","newsBtn"],
         sports:["Live Sports","sportsBtn"],
         music:["Play Music","musicBtn"],
