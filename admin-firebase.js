@@ -12,8 +12,8 @@ let currentRequestItems = [];
 let continuousQueueEnabled = false;
 
 const defaults = {
-  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?autoplay=1&mute=1&enablejsapi=1&rel=0"
+  newsUrl: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1&mute=1&enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed/live_stream?channel=UCn8zNIfYAQNdrFRrr8oibKw&autoplay=1&mute=1&enablejsapi=1&rel=0"
 };
 
 function setStatus(text) {
@@ -34,11 +34,12 @@ function defaultLiveTvChannels() {
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
       { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live official" },
+      { label: "⚽ Live Soccer", query: "FIFA live soccer FOX Soccer Telemundo Deportes" },
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf Golf Channel" },
+      { label: "🎾 Live Tennis", query: "ATP Tennis live WTA Tennis live" },
       { label: "🏀 NBA Live", query: "NBA live basketball" },
-      { label: "⚽ Live Soccer", query: "soccer live match today" },
-      { label: "⚾ MLB Live", query: "MLB live baseball" },
-      { label: "🎾 Tennis Live", query: "tennis live match" }
+      { label: "⚾ MLB Live", query: "MLB live baseball" }
     ]
   };
 }
