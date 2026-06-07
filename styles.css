@@ -2247,4 +2247,20 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   height:100% !important;
   width:100% !important;
 }
+.chauffeur-photo,
+.driver-photo,
+.avatar,
+.chauffeur-avatar{
+    width:220px !important;
+    height:220px !important;
+    border-radius:50% !important;
+    object-fit:cover !important;
+
+    border:4px solid rgba(247,221,144,.95);
+
+    box-shadow:
+        0 0 14px rgba(247,221,144,.65),
+        0 0 30px rgba(247,221,144,.40),
+        0 0 55px rgba(247,221,144,.22);
+}
 /* Rename support: keep all YouTube functions, display only changes to Video Lounge */
