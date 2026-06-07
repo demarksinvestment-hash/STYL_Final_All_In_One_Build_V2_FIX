@@ -196,7 +196,7 @@ function escapeHtml(value) {
 }
 
 
-function extractVideo LoungeVideoId(value) {
+function extractYouTubeVideoId(value) {
   const text = String(value || "").trim();
   if (!text) return "";
   const patterns = [
@@ -268,7 +268,7 @@ async function sendContinuousQueueUpdate(statusText = "Queue updated") {
   const queue = (currentRequestItems || [])
     .map(item => ({
       query: `${item.title || ""} ${item.artist || ""}`.trim(),
-      videoId: extractVideo LoungeVideoId(item.link || ""),
+      videoId: extractYouTubeVideoId(item.link || ""),
       label: `${item.title || ""}${item.artist ? " — " + item.artist : ""}`.trim()
     }))
     .filter(item => item.query || item.videoId || item.label);
