@@ -12,8 +12,8 @@ let currentRequestItems = [];
 let continuousQueueEnabled = false;
 
 const defaults = {
-  newsUrl: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1&mute=1&enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/live_stream?channel=UCn8zNIfYAQNdrFRrr8oibKw&autoplay=1&mute=1&enablejsapi=1&rel=0"
+  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?autoplay=1&mute=1&enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?autoplay=1&mute=1&enablejsapi=1&rel=0"
 };
 
 function setStatus(text) {
@@ -29,17 +29,24 @@ function defaultLiveTvChannels() {
       { label: "CBS News Live", query: "CBS News Live" },
       { label: "Bloomberg Live", query: "Bloomberg Live" },
       { label: "Fox Weather", query: "Fox Weather Live" },
-      { label: "WFAA Dallas", query: "WFAA Dallas Live" }
+      { label: "WFAA Dallas", query: "WFAA Dallas Live" },
+      { label: "Local Dallas News", query: "Dallas local news live" }
     ],
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
       { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live official" },
-      { label: "⚽ Live Soccer", query: "FIFA live soccer FOX Soccer Telemundo Deportes" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf Golf Channel" },
-      { label: "🎾 Live Tennis", query: "ATP Tennis live WTA Tennis live" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live" },
+      { label: "🏆 FIFA Official", query: "FIFA official live" },
+      { label: "⚽ Live Soccer", query: "FIFA live soccer" },
+      { label: "⚽ FOX Soccer", query: "FOX Soccer live" },
+      { label: "⚽ Telemundo Deportes", query: "Telemundo Deportes live" },
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "⛳ Golf Channel", query: "Golf Channel live" },
+      { label: "🎾 Live Tennis", query: "ATP Tennis live" },
+      { label: "🎾 WTA Tennis", query: "WTA Tennis live" },
       { label: "🏀 NBA Live", query: "NBA live basketball" },
-      { label: "⚾ MLB Live", query: "MLB live baseball" }
+      { label: "⚾ MLB Live", query: "MLB live baseball" },
+      { label: "🏈 NFL Live", query: "NFL live football" }
     ]
   };
 }
