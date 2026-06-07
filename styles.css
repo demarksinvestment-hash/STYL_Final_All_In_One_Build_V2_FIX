@@ -2077,18 +2077,19 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
   overflow:hidden;
 }
 .chauffeur-photo{
-  width:128px;
-  height:128px;
-  object-fit:cover;
-  object-position:center top;
-  border-radius:50%;
-  display:block;
-  margin:4px auto 10px auto;
-  border:2px solid rgba(245,217,138,.95);
-  background:rgba(0,0,0,.35);
-  box-shadow:0 0 18px rgba(212,175,55,.38), inset 0 0 12px rgba(255,240,196,.10);
+    width: 180px !important;
+    height: 180px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    object-position: center top !important;
+    border: 3px solid #d4af37 !important;
+    box-shadow:
+      0 0 18px rgba(212,175,55,.6),
+      0 0 35px rgba(212,175,55,.35);
 }
-.chauffeur-role{
+.chauffeur-card{
+    min-height: 340px;
+}.chauffeur-role{
   color:#f5d98a;
   font-weight:700;
   font-size:.95vw;
