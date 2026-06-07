@@ -35,11 +35,12 @@ const config = {
     sports: [
       { label: "Yahoo Sports", query: "Yahoo Sports live" },
       { label: "CBS Sports HQ", query: "CBS Sports HQ live" },
-      { label: "⛳ Live Golf", query: "PGA TOUR live golf" },
+      { label: "🏆 FIFA World Cup", query: "FIFA World Cup 2026 live official" },
+      { label: "⚽ Live Soccer", query: "FIFA live soccer FOX Soccer Telemundo Deportes" },
+      { label: "⛳ Live Golf", query: "PGA TOUR live golf Golf Channel" },
+      { label: "🎾 Live Tennis", query: "ATP Tennis live WTA Tennis live" },
       { label: "🏀 NBA Live", query: "NBA live basketball" },
-      { label: "⚽ Live Soccer", query: "soccer live match today" },
-      { label: "⚾ MLB Live", query: "MLB live baseball" },
-      { label: "🎾 Tennis Live", query: "tennis live match" }
+      { label: "⚾ MLB Live", query: "MLB live baseball" }
     ]
   },
   youtubePanelQuery: "",
@@ -48,8 +49,8 @@ const config = {
   bookingUrl: "https://stylblackcar.com/",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
-  newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
-  sportsUrl: "https://www.youtube.com/embed/9Tce7rnobzA?enablejsapi=1&rel=0",
+  newsUrl: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1&mute=1&enablejsapi=1&rel=0",
+  sportsUrl: "https://www.youtube.com/embed/live_stream?channel=UCn8zNIfYAQNdrFRrr8oibKw&autoplay=1&mute=1&enablejsapi=1&rel=0",
   newsLiveOverride: "",
   sportsLiveOverride: "",
   remoteCommand: "",
@@ -301,11 +302,14 @@ const liveMediaQueries = {
   ],
   sports: [
     "CBS Sports HQ live",
-    "sports news live",
-    "ESPN sports news live",
-    "Fox Sports live",
-    "live sports highlights",
-    "NBA news live"
+    "FIFA World Cup 2026 live official",
+    "FIFA live soccer",
+    "PGA TOUR live golf",
+    "Golf Channel live",
+    "ATP Tennis live",
+    "WTA Tennis live",
+    "NBA live basketball",
+    "MLB live baseball"
   ]
 };
 
@@ -426,8 +430,9 @@ async function loadLiveTvChannel(kind = "news", query = "", label = "", shouldBr
 function getLiveChannelIcon(kind = "news", channel = {}) {
   if (kind !== "sports") return "📺";
   const text = `${channel.label || ""} ${channel.query || ""}`.toLowerCase();
+  if (text.includes("world cup")) return "🏆";
   if (text.includes("golf") || text.includes("pga")) return "⛳";
-  if (text.includes("soccer") || text.includes("fifa") || text.includes("world cup")) return "⚽";
+  if (text.includes("soccer") || text.includes("fifa")) return "⚽";
   if (text.includes("nba") || text.includes("basketball")) return "🏀";
   if (text.includes("mlb") || text.includes("baseball")) return "⚾";
   if (text.includes("tennis") || text.includes("atp") || text.includes("wta")) return "🎾";
