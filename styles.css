@@ -2069,3 +2069,38 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
     width:138px !important;
   }
 }
+
+
+/* STYL Phase 2: Chauffeur profile photo */
+.chauffeur-profile-card{
+  text-align:center;
+  overflow:hidden;
+}
+.chauffeur-photo{
+  width:128px;
+  height:128px;
+  object-fit:cover;
+  object-position:center top;
+  border-radius:50%;
+  display:block;
+  margin:4px auto 10px auto;
+  border:2px solid rgba(245,217,138,.95);
+  background:rgba(0,0,0,.35);
+  box-shadow:0 0 18px rgba(212,175,55,.38), inset 0 0 12px rgba(255,240,196,.10);
+}
+.chauffeur-role{
+  color:#f5d98a;
+  font-weight:700;
+  font-size:.95vw;
+  margin-top:4px;
+}
+.chauffeur-company{
+  color:#d4af37;
+  font-weight:800;
+  font-size:.92vw;
+  margin-top:4px;
+}
+@media (max-width:900px){
+  .chauffeur-photo{width:120px;height:120px;}
+  .chauffeur-role,.chauffeur-company{font-size:2vw;}
+}
