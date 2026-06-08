@@ -1683,7 +1683,63 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
+      if (cmd === "hardrefresh") {
+        console.log("STYL Reset Rider Session command received");
+
+        try {
+          requestQueue = [];
+          requestQueueIndex = 0;
+          requestQueueActive = false;
+          requestQueueContinuous = false;
+          requestQueueSignature = "";
+
+          localRequestQueueSeenKeys = new Set();
+          localRequestQueueStarted = false;
+
+          clearRequestQueueTimer();
+
+          if (typeof renderRequestQueuePanel === "function") {
+            renderRequestQueuePanel();
+          }
+
+          localStorage.removeItem("stylLiveMedia_news");
+          localStorage.removeItem("stylLiveMedia_sports");
+          localStorage.removeItem("stylRequestQueue");
+          localStorage.removeItem("stylQueueState");
+          sessionStorage.clear();
+        } catch (err) {
+          console.error("Reset Rider Session cleanup failed", err);
+        }
+
+        try {
+          if (dbRef) {
+            update(dbRef, {
+              remoteCommand: "home",
+              requestQueue: [],
+              requestQueueContinuous: false,
+              youtubePanelQuery: "",
+              youtubePanelVideoId: "",
+              updatedAt: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.error("Could not clear hardrefresh command", err);
+        }
+
+        const splash = document.getElementById("welcomeSplash");
+        if (splash) {
+          splash.classList.add("hide");
+          splash.classList.add("force-hide");
+          splash.style.display = "none";
+        }
+
+        setTimeout(() => {
+          window.location.href = window.location.pathname + "?v=resetrider" + Date.now();
+        }, 800);
+
+        return;
+      }
+      else if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
@@ -1709,58 +1765,8 @@ function initFirebaseSync() {
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
   initLocalAutoRequestQueueEngine(db);
-onValue(liveDoc, (snap) => {
-  const data = snap.exists() ? (snap.val() || {}) : {};
-
-  if (data.remoteCommand === "hardrefresh") {
-    console.log("STYL Reset Rider Session command received");
-
-    try {
-      requestQueue = [];
-      requestQueueIndex = 0;
-      requestQueueActive = false;
-      requestQueueContinuous = false;
-      requestQueueSignature = "";
-
-      localRequestQueueSeenKeys = new Set();
-      localRequestQueueStarted = false;
-
-      clearRequestQueueTimer();
-
-      if (typeof renderRequestQueuePanel === "function") {
-        renderRequestQueuePanel();
-      }
-
-      localStorage.removeItem("stylLiveMedia_news");
-      localStorage.removeItem("stylLiveMedia_sports");
-      localStorage.removeItem("stylRequestQueue");
-      localStorage.removeItem("stylQueueState");
-
-      sessionStorage.clear();
-    } catch (err) {
-      console.error("Reset Rider Session cleanup failed", err);
-    }
-
-    setTimeout(() => {
-    const splash = document.getElementById("welcomeSplash");
-
-    if (splash) {
-        splash.classList.add("hide");
-        splash.classList.add("force-hide");
-        splash.style.display = "none";
-    }
-
-    window.location.href =
-        window.location.pathname +
-        "?v=resetrider" +
-        Date.now();
-}, 800);
-
-    return;
-  }
-
-  applyProfile(data);
-}, (err) => {    console.error("Realtime sync error", err);
+  onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
+    console.error("Realtime sync error", err);
     applyProfile({});
   });
 }
