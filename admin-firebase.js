@@ -492,7 +492,7 @@ window.addEventListener("load", async () => {
   byId("saveSourcesBtn")?.addEventListener("click", saveSources);
   byId("playQueueBtn")?.addEventListener("click", playAllRequestsQueue);
   byId("clearRequestsBtn")?.addEventListener("click", clearRequests);
-  byId("resetRiderSessionBtn")?.addEventListener("click", () => sendRemote("hardrefresh", {
+  byId("resetRiderSessionBtn")?.addEventListener("click", () => sendRemote("resetonce", {
   requestQueue: [],
   requestQueueContinuous: false,
   youtubePanelQuery: "",
