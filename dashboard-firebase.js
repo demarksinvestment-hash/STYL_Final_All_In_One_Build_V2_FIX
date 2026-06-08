@@ -1683,8 +1683,9 @@ function applyProfile(data = {}) {
     const cmd = String(config.remoteCommand || "").toLowerCase();
     suppressBroadcast = true;
     try {
-      if (cmd === "hardrefresh") {
-        console.log("STYL Reset Rider Session command received");
+      if (cmd === "resetonce" && sessionStorage.getItem("stylResetDone") !== String(data.remoteNonce || "")) {
+  console.log("STYL Reset Rider Session command received");
+  sessionStorage.setItem("stylResetDone", String(data.remoteNonce || ""));
 
         try {
           requestQueue = [];
