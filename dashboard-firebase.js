@@ -1709,8 +1709,47 @@ function initFirebaseSync() {
   const liveDoc = ref(db, `${firebasePaths.collection}/${firebasePaths.doc}`);
   dbRef = liveDoc;
   initLocalAutoRequestQueueEngine(db);
-  onValue(liveDoc, (snap) => applyProfile(snap.exists() ? (snap.val() || {}) : {}), (err) => {
-    console.error("Realtime sync error", err);
+onValue(liveDoc, (snap) => {
+  const data = snap.exists() ? (snap.val() || {}) : {};
+
+  if (data.remoteCommand === "hardrefresh") {
+    console.log("STYL Reset Rider Session command received");
+
+    try {
+      requestQueue = [];
+      requestQueueIndex = 0;
+      requestQueueActive = false;
+      requestQueueContinuous = false;
+      requestQueueSignature = "";
+
+      localRequestQueueSeenKeys = new Set();
+      localRequestQueueStarted = false;
+
+      clearRequestQueueTimer();
+
+      if (typeof renderRequestQueuePanel === "function") {
+        renderRequestQueuePanel();
+      }
+
+      localStorage.removeItem("stylLiveMedia_news");
+      localStorage.removeItem("stylLiveMedia_sports");
+      localStorage.removeItem("stylRequestQueue");
+      localStorage.removeItem("stylQueueState");
+
+      sessionStorage.clear();
+    } catch (err) {
+      console.error("Reset Rider Session cleanup failed", err);
+    }
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+
+    return;
+  }
+
+  applyProfile(data);
+}, (err) => {    console.error("Realtime sync error", err);
     applyProfile({});
   });
 }
