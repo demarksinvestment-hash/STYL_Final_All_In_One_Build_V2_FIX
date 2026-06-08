@@ -1742,8 +1742,19 @@ onValue(liveDoc, (snap) => {
     }
 
     setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    const splash = document.getElementById("welcomeSplash");
+
+    if (splash) {
+        splash.classList.add("hide");
+        splash.classList.add("force-hide");
+        splash.style.display = "none";
+    }
+
+    window.location.href =
+        window.location.pathname +
+        "?v=resetrider" +
+        Date.now();
+}, 800);
 
     return;
   }
