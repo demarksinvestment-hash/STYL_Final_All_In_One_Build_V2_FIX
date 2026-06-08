@@ -492,6 +492,13 @@ window.addEventListener("load", async () => {
   byId("saveSourcesBtn")?.addEventListener("click", saveSources);
   byId("playQueueBtn")?.addEventListener("click", playAllRequestsQueue);
   byId("clearRequestsBtn")?.addEventListener("click", clearRequests);
+  byId("resetRiderSessionBtn")?.addEventListener("click", () => sendRemote("hardrefresh", {
+  requestQueue: [],
+  requestQueueContinuous: false,
+  youtubePanelQuery: "",
+  youtubePanelVideoId: "",
+  remoteNonce: Date.now()
+}, "Reset Rider Session"));
   byId("clearBookingClicksBtn")?.addEventListener("click", clearBookingClicks);
   byId("roiAvgRide")?.addEventListener("input", () => renderBookingPerformance(currentBookingClicksData));
   byId("roiConversionRate")?.addEventListener("input", () => renderBookingPerformance(currentBookingClicksData));
