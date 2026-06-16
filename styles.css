@@ -2264,3 +2264,110 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
         0 0 55px rgba(247,221,144,.22);
 }
 /* Rename support: keep all YouTube functions, display only changes to Video Lounge */
+
+
+/* STYL World Cup + 7-button single-row tab update */
+.top-tabs{
+  grid-template-columns:repeat(7, minmax(0, 1fr)) !important;
+  gap:8px !important;
+}
+.top-tabs .tab-btn{
+  min-width:0;
+  padding:10px 6px !important;
+  font-size:.82vw !important;
+  gap:6px !important;
+  white-space:nowrap;
+}
+.top-tabs .tab-icon{
+  margin-right:0 !important;
+  flex:0 0 auto;
+}
+.top-tabs .tab-text{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.worldcup-panel{
+  height:100%;
+  display:grid;
+  grid-template-rows:auto 1fr;
+  gap:14px;
+}
+.worldcup-hero-card{
+  border:1px solid rgba(235,192,98,.42);
+  border-radius:18px;
+  padding:22px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(247,221,144,.14), transparent 36%),
+    linear-gradient(135deg, rgba(255,236,184,.08), rgba(0,0,0,.45));
+  box-shadow:0 0 28px rgba(212,166,67,.14), inset 0 0 20px rgba(255,240,196,.05);
+}
+.worldcup-kicker{
+  letter-spacing:3px;
+  font-size:.9vw;
+  color:#f0d281;
+  margin-bottom:8px;
+}
+.worldcup-hero-card h2{
+  margin:0 0 8px;
+  font-size:2.4vw;
+  color:#fff2cb;
+}
+.worldcup-hero-card p{
+  margin:0 auto 16px;
+  font-size:1.05vw;
+  max-width:760px;
+  opacity:.92;
+}
+.worldcup-actions{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.watch-btn{
+  border:1px solid #f1cf79;
+  border-radius:14px;
+  padding:14px 22px;
+  font-size:1vw;
+  font-weight:800;
+  cursor:pointer;
+  color:#080808;
+  background:linear-gradient(135deg,#c9a227,#f5d76e);
+  box-shadow:0 0 16px rgba(247,221,144,.25);
+}
+.watch-btn.secondary{
+  color:#fff6d0;
+  background:linear-gradient(145deg,#0f0f0f,#1c1c1c);
+}
+.watch-btn:active{transform:scale(.98);}
+.worldcup-note{
+  margin-top:12px;
+  font-size:.85vw;
+  opacity:.82;
+}
+.worldcup-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+.worldcup-info-card{
+  border:1px solid rgba(235,192,98,.35);
+  border-radius:16px;
+  padding:18px;
+  background:rgba(255,220,130,.045);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.worldcup-info-card strong{font-size:1.1vw;color:#fff2cb;}
+.worldcup-info-card span{font-size:.95vw;line-height:1.45;opacity:.88;}
+@media (max-width:1200px){
+  .top-tabs{grid-template-columns:repeat(7, minmax(0, 1fr)) !important;}
+  .top-tabs .tab-btn{font-size:1.15vw !important;padding:9px 4px !important;}
+  .worldcup-grid{grid-template-columns:1fr;}
+  .worldcup-kicker,.worldcup-note,.worldcup-info-card span{font-size:1.8vw;}
+  .worldcup-hero-card h2{font-size:4vw;}
+  .worldcup-hero-card p,.watch-btn,.worldcup-info-card strong{font-size:2vw;}
+}
