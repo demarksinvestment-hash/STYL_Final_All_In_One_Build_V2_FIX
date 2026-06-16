@@ -54,6 +54,7 @@ const config = {
   youtubePanelVideoId: "",
   requestQueue: [],
   bookingUrl: "https://stylblackcar.com/",
+  foxOneUrl: "https://www.fox.com/soccer/fifa-world-cup",
   vipFormUrl: "https://stylblackcar.com/contact/",
   youtubeLoungeUrl: "https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&rel=0",
   newsUrl: "https://www.youtube.com/embed/lHxuE0Qf7sg?enablejsapi=1&rel=0",
@@ -96,7 +97,7 @@ const config = {
   weatherFallback: { temp: "--", icon: "☀️", text: "Weather unavailable" }
 };
 
-const viewNames = ["home","youtube","news","sports","music","vip","book"];
+const viewNames = ["home","youtube","news","sports","worldCup","music","vip","book"];
 const views = Object.fromEntries(viewNames.map(name => [name, byId(name + "View")]));
 let currentView = "home";
 let currentMusicMode = "executive";
@@ -629,12 +630,23 @@ function afterViewAudioKick(name) {
     loadLiveMediaFrame("sports");
     tryAutoSound("sportsFrame");
     showActiveSoundOverlay();
+  } else if (name === "worldCup") {
+    stopAllPlayers();
   } else if (name === "music") {
     const f = byId("musicFrame");
     if (f) f.src = forceAutoplay(config.musicModes[currentMusicMode].embedUrl);
     tryAutoSound("musicFrame");
     showActiveSoundOverlay();
   }
+}
+
+
+function openFoxOne() {
+  window.location.href = config.foxOneUrl || "https://www.fox.com/soccer/fifa-world-cup";
+}
+
+function openWorldCupSports() {
+  showView("sports", "Live Sports", "sportsBtn", "Choose official sports coverage.");
 }
 
 function showView(name, title, tabId, subtitle = "Everything opens inside the dashboard.") {
@@ -1743,6 +1755,8 @@ function applyProfile(data = {}) {
       else if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
+      else if (cmd === "worldCup") showView("worldCup", "World Cup 2026", "worldCupBtn", "Match center and FOX One access.");
+      else if (cmd === "foxone") openFoxOne();
       else if (cmd === "music") showView("music", "Play Music", "musicBtn");
       else if (cmd === "youtubepanel") { showView("youtube", "Video Lounge", "youtubeBtn"); searchYouTubePanel(config.youtubePanelQuery || "", true); }
       else if (cmd === "youtubequeue") { startRequestQueue(config.requestQueue || [], false); }
@@ -1775,22 +1789,27 @@ function initFirebaseSync() {
 function initTabs() {
   const tabs = [
     ["homeBtn","home","STYL Home"],
-    ["youtubeBtn","youtube","Video Lounge"],
-    ["newsBtn","news","Live News"],
-    ["sportsBtn","sports","Live Sports"],
-    ["musicBtn","music","Play Music"],
-    ["bookBtn","book","Book Next Ride"]
+    ["youtubeBtn","youtube","Videos"],
+    ["newsBtn","news","News"],
+    ["sportsBtn","sports","Sports"],
+    ["worldCupBtn","worldCup","World Cup 2026"],
+    ["musicBtn","music","Music"],
+    ["bookBtn","book","Book Ride"]
   ];
   tabs.forEach(([id, view, title]) => {
     const btn = byId(id);
     if (btn) btn.addEventListener("click", () => {
       showView(view, title, id);
-      if (["home","youtube","news","sports","music"].includes(view)) {
+      if (["home","youtube","news","sports","worldCup","music"].includes(view)) {
         const extra = view === "music" ? { mode: currentMusicMode } : {};
         broadcastRemoteCommand(view, extra);
       }
     });
   });
+
+
+  byId("openFoxOneBtn")?.addEventListener("click", openFoxOne);
+  byId("worldCupSportsBtn")?.addEventListener("click", openWorldCupSports);
 
   const vipBtn = byId("vipBtn");
   if (vipBtn) vipBtn.addEventListener("click", () => showView("vip", "Join Our VIP", "vipBtn", "Guests can register for exclusive discount offers."));
