@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STYL FOX One Launcher</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;font-family:Arial,Helvetica,sans-serif;background:#050505;color:#f5d98a;overflow:hidden}
+    body{display:flex;align-items:center;justify-content:center;background:
+      radial-gradient(circle at 16% 78%, rgba(185,130,24,.22), transparent 24%),
+      radial-gradient(circle at 84% 18%, rgba(185,130,24,.14), transparent 24%),
+      linear-gradient(180deg,#121212 0%,#030303 100%)}
+    .launcher{width:min(980px,92vw);min-height:70vh;border:2px solid #b8841f;border-radius:28px;padding:34px;text-align:center;background:
+      linear-gradient(180deg, rgba(255,223,147,.08), rgba(255,223,147,.02)),rgba(0,0,0,.58);box-shadow:0 0 36px rgba(184,135,31,.22),inset 0 0 28px rgba(255,255,255,.035)}
+    .brand{font-size:min(11vw,92px);font-weight:900;line-height:.95;background:linear-gradient(180deg,#fff3c8 0%,#f3cc70 35%,#b47817 85%,#f7de93 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0 6px}
+    .sub{letter-spacing:4px;font-size:18px;color:#f4d789;margin-bottom:28px}
+    h1{font-size:min(6vw,48px);margin:14px 0 12px;color:#fff6d0}
+    p{font-size:min(3vw,22px);line-height:1.5;margin:0 auto 24px;max-width:760px;color:#f7dd90}
+    .actions{display:grid;grid-template-columns:1fr;gap:18px;margin:28px auto 0;max-width:720px}
+    .btn{display:flex;align-items:center;justify-content:center;min-height:86px;border-radius:22px;text-decoration:none;font-size:min(4.4vw,30px);font-weight:900;border:1px solid #f1cf79;cursor:pointer}
+    .return{background:linear-gradient(180deg, rgba(255,244,210,.24), rgba(88,62,14,.88)),linear-gradient(90deg, rgba(90,64,13,.98), rgba(184,132,31,.96), rgba(90,64,13,.98));color:#fff6d0;box-shadow:0 0 20px rgba(247,221,144,.30),inset 0 0 20px rgba(255,250,229,.10)}
+    .fox{background:linear-gradient(180deg,#163b8f,#071c4f);color:white;border-color:#6ea3ff;box-shadow:0 0 20px rgba(65,116,255,.28)}
+    .note{margin-top:22px;font-size:16px;opacity:.82;color:#ecd18a}
+    @media (min-width:800px){.actions{grid-template-columns:1fr 1fr}.return{grid-column:1/-1}}
+  </style>
+</head>
+<body>
+  <main class="launcher">
+    <div class="brand">STYL</div>
+    <div class="sub">BLACK CAR SERVICE</div>
+    <h1>FOX One Match Access</h1>
+    <p>Use the gold button to return to the STYL dashboard. Use the blue button to open FOX One for the full live match.</p>
+    <div class="actions">
+      <button class="btn return" id="returnBtn" type="button">⬅ Return to STYL Dashboard</button>
+      <button class="btn fox" id="foxBtn" type="button">▶ Open FOX One</button>
+    </div>
+    <div class="note">Tip: If FOX One takes over the kiosk window, use the kiosk browser Home shortcut or reopen the STYL dashboard link with a fresh refresh code.</div>
+  </main>
+
+  <script>
+    const dashboardUrl = "live.html?stylrefresh=" + Date.now();
+    document.getElementById("returnBtn").addEventListener("click", () => {
+      window.location.href = dashboardUrl;
+    });
+    document.getElementById("foxBtn").addEventListener("click", () => {
+      window.location.href = "https://www.fox.com/soccer/fifa-world-cup";
+    });
+  </script>
+</body>
+</html>
