@@ -467,12 +467,14 @@ window.addEventListener("load", async () => {
   byId("remoteSportsBtnSimple")?.addEventListener("click", () => sendRemote("sports", {}, "Live Sports"));
 
   byId("remoteHomeBtn")?.addEventListener("click", () => sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"));
-  byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "Video Lounge"));
+  byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "Videos"));
   byId("remoteUnmuteBtn")?.addEventListener("click", () => sendRemote("unmute", { remoteNonce: Date.now() }, "Play + Sound"));
   byId("remoteNewsBtn")?.addEventListener("click", () => sendRemote("news", {}, "News"));
   byId("remoteSportsBtn")?.addEventListener("click", () => sendRemote("sports", {}, "Sports"));
+  byId("remoteWorldCupBtn")?.addEventListener("click", () => sendRemote("worldCup", {}, "World Cup"));
+  byId("remoteFoxOneBtn")?.addEventListener("click", () => sendRemote("foxone", { remoteNonce: Date.now() }, "FOX One"));
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
-  byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
+  byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book Ride"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
   byId("saveUpsellBtn")?.addEventListener("click", saveUpsellSettings);
   byId("previewUpsellBtn")?.addEventListener("click", () => triggerEndTripUpsell("previewupsell", "Preview Upsell"));
