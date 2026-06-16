@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>STYL Iframe Only Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260616-worldcup-tabs-fix" />
 </head>
 <body>
   <div id="welcomeSplash" class="welcome-splash" aria-hidden="true">
@@ -261,6 +261,47 @@
       <button id="endTripCloseBtn" class="end-trip-close-btn" type="button">Close</button>
     </div>
   </div>
-  <script type="module" src="dashboard-firebase.js"></script>
+  <script type="module" src="dashboard-firebase.js?v=20260616-worldcup-tabs-fix"></script>
+  <script>
+    // STYL fallback: keeps World Cup tab clickable even if kiosk browser serves an older JS file.
+    (function(){
+      function activateView(viewName, btnId, titleText, subtitleText){
+        document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+        var view = document.getElementById(viewName + 'View');
+        if (view) view.classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+        var btn = document.getElementById(btnId);
+        if (btn) btn.classList.add('active');
+        var title = document.getElementById('panelTitle');
+        if (title) title.textContent = titleText || 'STYL';
+        var subtitle = document.getElementById('panelSubtitle');
+        if (subtitle) subtitle.textContent = subtitleText || '';
+      }
+      window.addEventListener('DOMContentLoaded', function(){
+        var worldCupBtn = document.getElementById('worldCupBtn');
+        if (worldCupBtn && !worldCupBtn.dataset.stylFallbackBound) {
+          worldCupBtn.dataset.stylFallbackBound = '1';
+          worldCupBtn.addEventListener('click', function(){
+            activateView('worldCup', 'worldCupBtn', 'World Cup 2026', 'Match center and FOX One access.');
+          });
+        }
+        var worldCupSportsBtn = document.getElementById('worldCupSportsBtn');
+        if (worldCupSportsBtn && !worldCupSportsBtn.dataset.stylFallbackBound) {
+          worldCupSportsBtn.dataset.stylFallbackBound = '1';
+          worldCupSportsBtn.addEventListener('click', function(){
+            activateView('sports', 'sportsBtn', 'Sports', 'Choose official sports coverage.');
+          });
+        }
+        var foxOneBtn = document.getElementById('foxOneBtn');
+        if (foxOneBtn && !foxOneBtn.dataset.stylFallbackBound) {
+          foxOneBtn.dataset.stylFallbackBound = '1';
+          foxOneBtn.addEventListener('click', function(){
+            window.location.href = 'https://www.fox.com/soccer/fifa-world-cup';
+          });
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
