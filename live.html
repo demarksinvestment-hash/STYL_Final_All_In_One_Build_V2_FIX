@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>STYL Iframe Only Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=20260616-worldcup-tabs-fix" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="welcomeSplash" class="welcome-splash" aria-hidden="true">
@@ -29,12 +29,12 @@
 
       <nav class="top-tabs">
         <button class="tab-btn active" id="homeBtn" type="button"><span class="tab-icon">🏠</span><span class="tab-text">Home</span></button>
-        <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">📺</span><span class="tab-text">Videos</span></button>
-        <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">News</span></button>
-        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">⚽</span><span class="tab-text">Sports</span></button>
-        <button class="tab-btn" id="worldCupBtn" type="button"><span class="tab-icon">🏆</span><span class="tab-text">World Cup</span></button>
-        <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Music</span></button>
-        <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Ride</span></button>
+        <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">📺</span><span class="tab-text">Video Lounge</span></button>
+        <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">Live News</span></button>
+        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">⚽</span><span class="tab-text">Live Sports</span></button>
+        <button class="tab-btn" id="worldcupBtn" type="button"><span class="tab-icon">🏆</span><span class="tab-text">World Cup 2026</span></button>
+        <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Play Music</span></button>
+        <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Next Ride</span></button>
       </nav>
 
       <section class="content">
@@ -174,22 +174,36 @@
               </div>
             </section>
 
-            <section id="worldCupView" class="view">
-              <div class="worldcup-panel">
+
+            <section id="worldcupView" class="view">
+              <div class="worldcup-page">
                 <div class="worldcup-hero-card">
                   <div class="worldcup-kicker">FIFA WORLD CUP 2026</div>
-                  <h2>STYL World Cup Center</h2>
-                  <p>Follow matches, highlights, and official coverage while riding in STYL.</p>
+                  <h2>STYL Match Center</h2>
+                  <p>Live scores, schedules, highlights, and full-match access for riders heading to DFW, DAL, or AT&amp;T Stadium.</p>
                   <div class="worldcup-actions">
-                    <button class="watch-btn foxone-watch-btn" id="openFoxOneBtn" type="button">🦊 Watch Full Match on FOX One</button>
+                    <button class="watch-btn primary" id="foxOneRiderBtn" type="button">▶ Watch Full Match on FOX One</button>
                     <button class="watch-btn secondary" id="worldCupSportsBtn" type="button">⚽ Open Live Sports</button>
                   </div>
-                  <div class="worldcup-note">FOX One opens in the same kiosk browser window. Use the kiosk home/back control to return to STYL.</div>
                 </div>
+
                 <div class="worldcup-grid">
-                  <div class="worldcup-info-card"><strong>Live Matches</strong><span>Use FOX One for full 90-minute games.</span></div>
-                  <div class="worldcup-info-card"><strong>Highlights</strong><span>Official FIFA, FOX Soccer, and Telemundo coverage stay under Sports.</span></div>
-                  <div class="worldcup-info-card"><strong>Dallas Visitors</strong><span>Book STYL for DFW, DAL, hotels, and AT&amp;T Stadium transfers.</span></div>
+                  <div class="worldcup-card">
+                    <strong>Today’s Matches</strong>
+                    <span>Check official live coverage and match updates.</span>
+                  </div>
+                  <div class="worldcup-card">
+                    <strong>Scores &amp; Standings</strong>
+                    <span>Follow group standings, results, and upcoming fixtures.</span>
+                  </div>
+                  <div class="worldcup-card">
+                    <strong>Dallas Visitors</strong>
+                    <span>Book STYL for airport transfers, hotels, and AT&amp;T Stadium trips.</span>
+                  </div>
+                </div>
+
+                <div class="worldcup-note">
+                  FOX One opens through a STYL launcher page with a large Return to STYL Dashboard button.
                 </div>
               </div>
             </section>
@@ -261,47 +275,6 @@
       <button id="endTripCloseBtn" class="end-trip-close-btn" type="button">Close</button>
     </div>
   </div>
-  <script type="module" src="dashboard-firebase.js?v=20260616-worldcup-tabs-fix"></script>
-  <script>
-    // STYL fallback: keeps World Cup tab clickable even if kiosk browser serves an older JS file.
-    (function(){
-      function activateView(viewName, btnId, titleText, subtitleText){
-        document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-        var view = document.getElementById(viewName + 'View');
-        if (view) view.classList.add('active');
-        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-        var btn = document.getElementById(btnId);
-        if (btn) btn.classList.add('active');
-        var title = document.getElementById('panelTitle');
-        if (title) title.textContent = titleText || 'STYL';
-        var subtitle = document.getElementById('panelSubtitle');
-        if (subtitle) subtitle.textContent = subtitleText || '';
-      }
-      window.addEventListener('DOMContentLoaded', function(){
-        var worldCupBtn = document.getElementById('worldCupBtn');
-        if (worldCupBtn && !worldCupBtn.dataset.stylFallbackBound) {
-          worldCupBtn.dataset.stylFallbackBound = '1';
-          worldCupBtn.addEventListener('click', function(){
-            activateView('worldCup', 'worldCupBtn', 'World Cup 2026', 'Match center and FOX One access.');
-          });
-        }
-        var worldCupSportsBtn = document.getElementById('worldCupSportsBtn');
-        if (worldCupSportsBtn && !worldCupSportsBtn.dataset.stylFallbackBound) {
-          worldCupSportsBtn.dataset.stylFallbackBound = '1';
-          worldCupSportsBtn.addEventListener('click', function(){
-            activateView('sports', 'sportsBtn', 'Sports', 'Choose official sports coverage.');
-          });
-        }
-        var foxOneBtn = document.getElementById('foxOneBtn');
-        if (foxOneBtn && !foxOneBtn.dataset.stylFallbackBound) {
-          foxOneBtn.dataset.stylFallbackBound = '1';
-          foxOneBtn.addEventListener('click', function(){
-            window.location.href = 'https://www.fox.com/soccer/fifa-world-cup';
-          });
-        }
-      });
-    })();
-  </script>
-
+  <script type="module" src="dashboard-firebase.js"></script>
 </body>
 </html>
