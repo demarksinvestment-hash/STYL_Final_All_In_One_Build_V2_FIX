@@ -50,20 +50,37 @@ function saveFullyKioskSettings() {
   setStatus("Fully Kiosk tablet control saved");
 }
 
+function normalizeFullyAddress(value = "") {
+  let raw = String(value || "").trim();
+  if (!raw) return "";
+  raw = raw.replace(/^https?:\/\//i, "").replace(/\/.*$/, "").trim();
+  if (!raw) return "";
+  return raw.includes(":") ? raw : `${raw}:2323`;
+}
+
 function fireFullyKioskCommand(cmd, params = {}) {
   const settings = getFullyKioskSettings();
-  const ips = [settings.tablet1Ip, settings.tablet2Ip].map(v => String(v || "").trim()).filter(Boolean);
+  const ips = [settings.tablet1Ip, settings.tablet2Ip]
+    .map(normalizeFullyAddress)
+    .filter(Boolean);
+
   if (!ips.length || !settings.password) {
-    setStatus("Enter tablet IP(s) and Fully password first");
+    setStatus("Enter tablet IP(s) and Fully password first, then Save Kiosk Control.");
     return;
   }
-  ips.forEach(ip => {
+
+  setStatus(`Sending Fully command: ${cmd}`);
+
+  ips.forEach(address => {
     const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
     Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
-    const url = `http://${ip}:2323/?${query.toString()}&_=${Date.now()}`;
+    const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
+
     // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
+    // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
     const img = new Image();
     img.style.display = "none";
+    img.referrerPolicy = "no-referrer";
     img.src = url;
     document.body.appendChild(img);
     setTimeout(() => img.remove(), 8000);
@@ -71,14 +88,19 @@ function fireFullyKioskCommand(cmd, params = {}) {
 }
 
 function sendFullyHome() {
+  // Fully REST commands are case-sensitive: use loadStartURL, not loadStartUrl.
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
-  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 150);
+  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
+  setTimeout(() => fireFullyKioskCommand("loadStartURL"), 350);
+  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 650); // compatibility fallback for older builds
 }
 
 function sendFullyFoxOne() {
   const url = getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL;
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
-  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 150);
+  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
+  setTimeout(() => fireFullyKioskCommand("loadURL", { url }), 350);
+  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 650); // compatibility fallback for older builds
 }
 
 function clearFullyOverlay() {
