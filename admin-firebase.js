@@ -88,21 +88,19 @@ function fireFullyKioskCommand(cmd, params = {}) {
 }
 
 function sendFullyHome() {
-  const homeUrl = STYL_START_URL + "?v=" + Date.now();
-
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
 
   setTimeout(() => {
     fireFullyKioskCommand("toForeground");
-  }, 150);
+  }, 100);
 
   setTimeout(() => {
-    fireFullyKioskCommand("loadURL", { url: homeUrl });
-  }, 350);
+    fireFullyKioskCommand("bringToForeground");
+  }, 500);
 
   setTimeout(() => {
-    fireFullyKioskCommand("loadUrl", { url: homeUrl });
-  }, 650);
+    fireFullyKioskCommand("loadStartURL");
+  }, 1000);
 }
 
 function sendFullyFoxOne() {
