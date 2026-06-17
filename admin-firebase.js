@@ -88,11 +88,21 @@ function fireFullyKioskCommand(cmd, params = {}) {
 }
 
 function sendFullyHome() {
-  // Fully REST commands are case-sensitive: use loadStartURL, not loadStartUrl.
+  const homeUrl = STYL_START_URL + "?v=" + Date.now();
+
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
-  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
-  setTimeout(() => fireFullyKioskCommand("loadStartURL"), 350);
-  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 650); // compatibility fallback for older builds
+
+  setTimeout(() => {
+    fireFullyKioskCommand("toForeground");
+  }, 150);
+
+  setTimeout(() => {
+    fireFullyKioskCommand("loadURL", { url: homeUrl });
+  }, 350);
+
+  setTimeout(() => {
+    fireFullyKioskCommand("loadUrl", { url: homeUrl });
+  }, 650);
 }
 
 function sendFullyFoxOne() {
