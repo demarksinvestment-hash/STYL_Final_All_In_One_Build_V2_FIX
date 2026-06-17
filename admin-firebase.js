@@ -21,6 +21,71 @@ function setStatus(text) {
 }
 
 
+const STYL_START_URL = "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html";
+const DEFAULT_FOX_ONE_URL = "https://www.fox.com/live";
+
+function getFullyKioskSettings() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("stylFullyKioskSettings") || "{}"); } catch (e) {}
+  return {
+    tablet1Ip: byId("fullyTablet1Ip")?.value.trim() || saved.tablet1Ip || "",
+    tablet2Ip: byId("fullyTablet2Ip")?.value.trim() || saved.tablet2Ip || "",
+    password: byId("fullyRemotePassword")?.value.trim() || saved.password || "",
+    foxOneWebUrl: byId("foxOneWebUrl")?.value.trim() || saved.foxOneWebUrl || DEFAULT_FOX_ONE_URL
+  };
+}
+
+function hydrateFullyKioskSettings() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("stylFullyKioskSettings") || "{}"); } catch (e) {}
+  if (byId("fullyTablet1Ip")) byId("fullyTablet1Ip").value = saved.tablet1Ip || "";
+  if (byId("fullyTablet2Ip")) byId("fullyTablet2Ip").value = saved.tablet2Ip || "";
+  if (byId("fullyRemotePassword")) byId("fullyRemotePassword").value = saved.password || "";
+  if (byId("foxOneWebUrl")) byId("foxOneWebUrl").value = saved.foxOneWebUrl || DEFAULT_FOX_ONE_URL;
+}
+
+function saveFullyKioskSettings() {
+  const settings = getFullyKioskSettings();
+  localStorage.setItem("stylFullyKioskSettings", JSON.stringify(settings));
+  setStatus("Fully Kiosk tablet control saved");
+}
+
+function fireFullyKioskCommand(cmd, params = {}) {
+  const settings = getFullyKioskSettings();
+  const ips = [settings.tablet1Ip, settings.tablet2Ip].map(v => String(v || "").trim()).filter(Boolean);
+  if (!ips.length || !settings.password) {
+    setStatus("Enter tablet IP(s) and Fully password first");
+    return;
+  }
+  ips.forEach(ip => {
+    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
+    Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
+    const url = `http://${ip}:2323/?${query.toString()}&_=${Date.now()}`;
+    // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
+    const img = new Image();
+    img.style.display = "none";
+    img.src = url;
+    document.body.appendChild(img);
+    setTimeout(() => img.remove(), 8000);
+  });
+}
+
+function sendFullyHome() {
+  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 150);
+}
+
+function sendFullyFoxOne() {
+  const url = getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL;
+  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 150);
+}
+
+function clearFullyOverlay() {
+  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+}
+
+
 function defaultLiveTvChannels() {
   return {
     news: [
@@ -110,6 +175,7 @@ function buildProfile() {
     afrobeatsMusicUrl: byId("afrobeatsMusicUrl")?.value.trim() || "https://www.youtube.com/embed/videoseries?list=PL64A9CBCC4F3BA5B2&enablejsapi=1&rel=0",
     spotifyMusicUrl: byId("spotifyMusicUrl")?.value.trim() || "https://open.spotify.com/embed/playlist/37i9dQZF1DX4UtSsGT1Sbe?utm_source=generator",
     youtubeApiKey: byId("youtubeApiKeySimple")?.value.trim() || byId("youtubeApiKey")?.value.trim() || "",
+    foxOneWebUrl: getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL,
     liveTvChannels: getLiveTvChannelsFromAdmin(),
     spotifyRiderUrl: byId("spotifyRiderUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
     musicRequestUrl: byId("musicRequestUrl")?.value.trim() || "https://demarksinvestment-hash.github.io/Youtube_elitefix/request.html",
@@ -466,13 +532,13 @@ window.addEventListener("load", async () => {
   byId("remoteNewsBtnSimple")?.addEventListener("click", () => sendRemote("news", {}, "Live News"));
   byId("remoteSportsBtnSimple")?.addEventListener("click", () => sendRemote("sports", {}, "Live Sports"));
 
-  byId("remoteHomeBtn")?.addEventListener("click", () => sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"));
+  byId("remoteHomeBtn")?.addEventListener("click", () => { sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Home / Stop Media"); sendFullyHome(); });
   byId("remoteYoutubeBtn")?.addEventListener("click", () => sendRemote("youtube", {}, "Video Lounge"));
   byId("remoteUnmuteBtn")?.addEventListener("click", () => sendRemote("unmute", { remoteNonce: Date.now() }, "Play + Sound"));
   byId("remoteNewsBtn")?.addEventListener("click", () => sendRemote("news", {}, "News"));
   byId("remoteSportsBtn")?.addEventListener("click", () => sendRemote("sports", {}, "Sports"));
-  byId("remoteWorldCupBtn")?.addEventListener("click", () => sendRemote("worldcup", {}, "World Cup 2026"));
-  byId("remoteFoxOneBtn")?.addEventListener("click", () => sendRemote("foxone", { remoteNonce: Date.now() }, "FOX One"));
+  byId("remoteWorldCupBtn")?.addEventListener("click", () => sendRemote("worldcup", {}, "FIFA 2026"));
+  byId("remoteFoxOneBtn")?.addEventListener("click", () => { sendRemote("foxone", { remoteNonce: Date.now(), foxOneWebUrl: getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL }, "FOX One Live"); sendFullyFoxOne(); });
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
   byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
@@ -485,7 +551,6 @@ window.addEventListener("load", async () => {
   byId("musicPartyBtn")?.addEventListener("click", () => sendMusicMode("party", "Music: Party"));
   byId("music80sBtn")?.addEventListener("click", () => sendMusicMode("rnb80s", "Music: R&B 80s"));
   byId("musicAfrobeatsBtn")?.addEventListener("click", () => sendMusicMode("afrobeats", "Music: Afrobeats"));
-  byId("musicSpotifyBtn")?.addEventListener("click", () => sendMusicMode("spotify", "Music: Spotify"));
 
   byId("goLiveNewsBtn")?.addEventListener("click", () => goLive("news"));
   byId("goLiveSportsBtn")?.addEventListener("click", () => goLive("sports"));
@@ -494,13 +559,22 @@ window.addEventListener("load", async () => {
   byId("saveSourcesBtn")?.addEventListener("click", saveSources);
   byId("playQueueBtn")?.addEventListener("click", playAllRequestsQueue);
   byId("clearRequestsBtn")?.addEventListener("click", clearRequests);
-  byId("resetRiderSessionBtn")?.addEventListener("click", () => sendRemote("resetonce", {
-  requestQueue: [],
-  requestQueueContinuous: false,
-  youtubePanelQuery: "",
-  youtubePanelVideoId: "",
-  remoteNonce: Date.now()
-}, "Reset Rider Session"));
+  byId("resetRiderSessionBtn")?.addEventListener("click", () => {
+  sendRemote("resetonce", {
+    requestQueue: [],
+    requestQueueContinuous: false,
+    youtubePanelQuery: "",
+    youtubePanelVideoId: "",
+    remoteNonce: Date.now()
+  }, "Reset Rider Session");
+  clearFullyOverlay();
+  setTimeout(() => sendFullyHome(), 300);
+});
+  hydrateFullyKioskSettings();
+  byId("saveFullyKioskBtn")?.addEventListener("click", saveFullyKioskSettings);
+  byId("fullyHomeBtn")?.addEventListener("click", () => { sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Fully Home"); sendFullyHome(); });
+  byId("fullyClearOverlayBtn")?.addEventListener("click", clearFullyOverlay);
+  ["fullyTablet1Ip","fullyTablet2Ip","fullyRemotePassword","foxOneWebUrl"].forEach(id => byId(id)?.addEventListener("change", saveFullyKioskSettings));
   byId("clearBookingClicksBtn")?.addEventListener("click", clearBookingClicks);
   byId("roiAvgRide")?.addEventListener("input", () => renderBookingPerformance(currentBookingClicksData));
   byId("roiConversionRate")?.addEventListener("input", () => renderBookingPerformance(currentBookingClicksData));
