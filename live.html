@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>STYL Iframe Only Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=finaltabsfox" />
 </head>
 <body>
   <div id="welcomeSplash" class="welcome-splash" aria-hidden="true">
@@ -29,12 +29,12 @@
 
       <nav class="top-tabs">
         <button class="tab-btn active" id="homeBtn" type="button"><span class="tab-icon">🏠</span><span class="tab-text">Home</span></button>
-        <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">📺</span><span class="tab-text">Video Lounge</span></button>
-        <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">Live News</span></button>
-        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">⚽</span><span class="tab-text">Live Sports</span></button>
-        <button class="tab-btn" id="worldcupBtn" type="button"><span class="tab-icon">🏆</span><span class="tab-text">World Cup 2026</span></button>
-        <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Play Music</span></button>
-        <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Next Ride</span></button>
+        <button class="tab-btn" id="youtubeBtn" type="button"><span class="tab-icon">📺</span><span class="tab-text">Videos</span></button>
+        <button class="tab-btn" id="newsBtn" type="button"><span class="tab-icon">📰</span><span class="tab-text">News</span></button>
+        <button class="tab-btn" id="sportsBtn" type="button"><span class="tab-icon">⚽</span><span class="tab-text">Sports</span></button>
+        <button class="tab-btn" id="worldcupBtn" type="button"><span class="tab-icon">🏆</span><span class="tab-text">FIFA 2026</span></button>
+        <button class="tab-btn" id="musicBtn" type="button"><span class="tab-icon">🎵</span><span class="tab-text">Music</span></button>
+        <button class="tab-btn" id="bookBtn" type="button"><span class="tab-icon">🚘</span><span class="tab-text">Book Ride</span></button>
       </nav>
 
       <section class="content">
@@ -182,7 +182,7 @@
                   <h2>STYL Match Center</h2>
                   <p>Live scores, schedules, highlights, and full-match access for riders heading to DFW, DAL, or AT&amp;T Stadium.</p>
                   <div class="worldcup-actions">
-                    <button class="watch-btn primary" id="foxOneRiderBtn" type="button">▶ Watch Full Match on FOX One</button>
+                    <button class="watch-btn primary" id="foxOneRiderBtn" type="button">▶ Open FOX One Live</button>
                     <button class="watch-btn secondary" id="worldCupSportsBtn" type="button">⚽ Open Live Sports</button>
                   </div>
                 </div>
@@ -203,7 +203,7 @@
                 </div>
 
                 <div class="worldcup-note">
-                  FOX One opens through a STYL launcher page with a large Return to STYL Dashboard button.
+                  FOX One opens in Fully Kiosk web mode. Use Admin Home to return both tablets to STYL.
                 </div>
               </div>
             </section>
@@ -275,6 +275,6 @@
       <button id="endTripCloseBtn" class="end-trip-close-btn" type="button">Close</button>
     </div>
   </div>
-  <script type="module" src="dashboard-firebase.js"></script>
+  <script type="module" src="dashboard-firebase.js?v=finaltabsfox"></script>
 </body>
 </html>
