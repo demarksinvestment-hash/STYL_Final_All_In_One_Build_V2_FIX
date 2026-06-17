@@ -23,6 +23,7 @@ const config = {
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
   youtubeApiKey: "",
+  foxOneWebUrl: "https://www.fox.com/live",
   liveTvChannels: {
     news: [
       { label: "ABC News Live", query: "ABC News Live" },
@@ -1743,7 +1744,7 @@ function applyProfile(data = {}) {
       else if (cmd === "livetvchannel") applyLiveTvSyncFromProfile();
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
-      else if (cmd === "worldcup") showView("worldcup", "World Cup 2026", "worldcupBtn", "Scores, schedules, highlights, and FOX One full-match access.");
+      else if (cmd === "worldcup") showView("worldcup", "FIFA 2026", "worldcupBtn", "Scores, schedules, highlights, and FOX One full-match access.");
       else if (cmd === "foxone") {
         const foxNonce = String(data.remoteNonce || data.updatedAt || "foxone");
         if (sessionStorage.getItem("stylFoxOneDone") !== foxNonce) {
@@ -1786,25 +1787,20 @@ function openFoxOneSameWindow(fromRemote = false) {
     sessionStorage.setItem("stylDashboardReturnUrl", window.location.href);
   } catch (e) {}
 
-  const goToFoxOne = () => {
-    window.location.href = "foxone.html?from=styl&t=" + Date.now();
-  };
+  const targetUrl = (config.foxOneWebUrl || "https://www.fox.com/live").trim() || "https://www.fox.com/live";
 
-  // If Admin sent FOX One, clear the command first so the dashboard does not
-  // reopen FOX One again after the kiosk browser returns/restarts.
-  if (fromRemote && dbRef) {
-    update(dbRef, {
-      remoteCommand: "home",
-      updatedAt: new Date().toISOString()
-    }).finally(() => setTimeout(goToFoxOne, 250));
-    return;
-  }
-
-  goToFoxOne();
+  // Fully Kiosk Plus can always bring tablets back with Load Start URL from Admin.
+  // We use FOX One web mode instead of the retired foxone.html launcher so tablets do not get trapped.
+  window.location.href = targetUrl + (targetUrl.includes("?") ? "&" : "?") + "stylfox=" + Date.now();
 }
 
 function initWorldCupButtons() {
-  byId("foxOneRiderBtn")?.addEventListener("click", () => openFoxOneSameWindow(false));
+  byId("foxOneRiderBtn")?.addEventListener("click", () => {
+    const nonce = Date.now();
+    broadcastRemoteCommand("foxone", { remoteNonce: nonce });
+    sessionStorage.setItem("stylFoxOneDone", String(nonce));
+    setTimeout(() => openFoxOneSameWindow(false), 150);
+  });
   byId("worldCupSportsBtn")?.addEventListener("click", () => {
     showView("sports", "Live Sports", "sportsBtn");
     broadcastRemoteCommand("sports", {});
@@ -1817,7 +1813,7 @@ function initTabs() {
     ["youtubeBtn","youtube","Video Lounge"],
     ["newsBtn","news","Live News"],
     ["sportsBtn","sports","Live Sports"],
-    ["worldcupBtn","worldcup","World Cup 2026"],
+    ["worldcupBtn","worldcup","FIFA 2026"],
     ["musicBtn","music","Play Music"],
     ["bookBtn","book","Book Next Ride"]
   ];
