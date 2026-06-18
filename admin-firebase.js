@@ -94,19 +94,13 @@ function fireFullyKioskCommand(cmd, params = {}) {
   });
 }
 function sendFullyHome() {
-  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+  const homeUrl =
+    "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html?v=" +
+    Date.now();
 
-  setTimeout(() => {
-    fireFullyKioskCommand("toForeground");
-  }, 100);
-
-  setTimeout(() => {
-    fireFullyKioskCommand("bringToForeground");
-  }, 500);
-
-  setTimeout(() => {
-    fireFullyKioskCommand("loadStartURL");
-  }, 1000);
+  fireFullyKioskCommand("loadURL", {
+    url: homeUrl
+  });
 }
 
 function sendFullyFoxOne() {
