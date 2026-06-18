@@ -74,9 +74,10 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
   ips.forEach((address) => {
     const query = new URLSearchParams({
-      cmd,
-      password: settings.password
-    });
+  cmd,
+  password: settings.password,
+  type: "json"
+});
 
     Object.entries(params || {}).forEach(([key, value]) => {
       query.set(key, String(value ?? ""));
