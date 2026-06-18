@@ -22,7 +22,7 @@ function setStatus(text) {
 
 
 const STYL_START_URL = "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html";
-const DEFAULT_FOX_ONE_URL = "https://www.fox.com/live";
+const DEFAULT_FOX_ONE_URL = "https://www.fox.com/soccer/fifa-world-cup";
 
 function getFullyKioskSettings() {
   let saved = {};
@@ -72,12 +72,12 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
   setStatus(`Sending Fully command: ${cmd}`);
 
-  ips.forEach((address) => {
+  ips.forEach((address, index) => {
     const query = new URLSearchParams({
-  cmd,
-  password: settings.password,
-  type: "json"
-});
+      cmd,
+      password: settings.password,
+      type: "json"
+    });
 
     Object.entries(params || {}).forEach(([key, value]) => {
       query.set(key, String(value ?? ""));
@@ -86,8 +86,13 @@ function fireFullyKioskCommand(cmd, params = {}) {
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
     console.log("FULLY URL:", url);
-window.open(url, "_blank");
+
+    setTimeout(() => {
+      window.open(url, "_blank");
+    }, index * 600);
+  });
 }
+
 function sendFullyHome() {
   const homeUrl =
     "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html?v=" +
