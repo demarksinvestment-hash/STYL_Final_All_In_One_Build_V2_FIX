@@ -98,9 +98,17 @@ function sendFullyHome() {
     "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html?v=" +
     Date.now();
 
-  fireFullyKioskCommand("loadURL", {
-    url: homeUrl
-  });
+  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+
+  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
+
+  setTimeout(() => {
+    fireFullyKioskCommand("loadURL", { url: homeUrl });
+  }, 350);
+
+  setTimeout(() => {
+    fireFullyKioskCommand("loadUrl", { url: homeUrl });
+  }, 650);
 }
 
 function sendFullyFoxOne() {
@@ -108,7 +116,7 @@ function sendFullyFoxOne() {
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
   setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
   setTimeout(() => fireFullyKioskCommand("loadURL", { url }), 350);
-  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 650); // compatibility fallback for older builds
+  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 650);
 }
 
 function clearFullyOverlay() {
