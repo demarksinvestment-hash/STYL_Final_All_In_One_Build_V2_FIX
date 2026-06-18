@@ -60,6 +60,7 @@ function normalizeFullyAddress(value = "") {
 
 function fireFullyKioskCommand(cmd, params = {}) {
   const settings = getFullyKioskSettings();
+
   const ips = [settings.tablet1Ip, settings.tablet2Ip]
     .map(normalizeFullyAddress)
     .filter(Boolean);
@@ -71,18 +72,24 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
   setStatus(`Sending Fully command: ${cmd}`);
 
-  ips.forEach(address => {
-    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
-    Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
+  ips.forEach((address) => {
+    const query = new URLSearchParams({
+      cmd,
+      password: settings.password
+    });
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+      query.set(key, String(value ?? ""));
+    });
+
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
-    // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
-    // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
     const img = new Image();
     img.style.display = "none";
     img.referrerPolicy = "no-referrer";
     img.src = url;
     document.body.appendChild(img);
+
     setTimeout(() => img.remove(), 8000);
   });
 }
