@@ -22,7 +22,7 @@ function setStatus(text) {
 
 
 const STYL_START_URL = "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html";
-const DEFAULT_FOX_ONE_URL = "https://www.fox.com/soccer/fifa-world-cup";
+const DEFAULT_FOX_ONE_URL = "https://www.fox.com/live";
 
 function getFullyKioskSettings() {
   let saved = {};
@@ -60,7 +60,6 @@ function normalizeFullyAddress(value = "") {
 
 function fireFullyKioskCommand(cmd, params = {}) {
   const settings = getFullyKioskSettings();
-
   const ips = [settings.tablet1Ip, settings.tablet2Ip]
     .map(normalizeFullyAddress)
     .filter(Boolean);
@@ -72,37 +71,28 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
   setStatus(`Sending Fully command: ${cmd}`);
 
-  ips.forEach((address, index) => {
-    const query = new URLSearchParams({
-      cmd,
-      password: settings.password,
-      type: "json"
-    });
-
-    Object.entries(params || {}).forEach(([key, value]) => {
-      query.set(key, String(value ?? ""));
-    });
-
+  ips.forEach(address => {
+    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
+    Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
-    console.log("FULLY URL:", url);
-
-    setTimeout(() => {
-      window.open(url, "_blank");
-    }, index * 600);
+    // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
+    // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
+    const img = new Image();
+    img.style.display = "none";
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+    document.body.appendChild(img);
+    setTimeout(() => img.remove(), 8000);
   });
 }
 
 function sendFullyHome() {
-  const homeUrl =
-    "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html?v=" +
-    Date.now();
-
+  // Fully REST commands are case-sensitive: use loadStartURL, not loadStartUrl.
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
-
-  setTimeout(() => {
-    fireFullyKioskCommand("loadURL", { url: homeUrl });
-  }, 300);
+  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
+  setTimeout(() => fireFullyKioskCommand("loadStartURL"), 350);
+  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 650); // compatibility fallback for older builds
 }
 
 function sendFullyFoxOne() {
@@ -110,7 +100,7 @@ function sendFullyFoxOne() {
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
   setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
   setTimeout(() => fireFullyKioskCommand("loadURL", { url }), 350);
-  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 650);
+  setTimeout(() => fireFullyKioskCommand("loadUrl", { url }), 650); // compatibility fallback for older builds
 }
 
 function clearFullyOverlay() {
