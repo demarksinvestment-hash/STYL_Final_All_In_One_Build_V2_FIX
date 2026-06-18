@@ -85,14 +85,8 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
-    const img = new Image();
-    img.style.display = "none";
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
-    document.body.appendChild(img);
-
-    setTimeout(() => img.remove(), 8000);
-  });
+    console.log("FULLY URL:", url);
+window.open(url, "_blank");
 }
 function sendFullyHome() {
   const homeUrl =
