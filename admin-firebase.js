@@ -74,8 +74,8 @@ function fireFullyKioskCommand(cmd, params = {}) {
   ips.forEach(address => {
     const query = new URLSearchParams({ cmd, password: settings.password });
     Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
-    const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
-
+const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
+console.log("FULLY URL:", url);
     // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
     // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
     const img = new Image();
