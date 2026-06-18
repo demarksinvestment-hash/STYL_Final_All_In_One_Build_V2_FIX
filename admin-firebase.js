@@ -100,15 +100,9 @@ function sendFullyHome() {
 
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
 
-  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
-
   setTimeout(() => {
     fireFullyKioskCommand("loadURL", { url: homeUrl });
-  }, 350);
-
-  setTimeout(() => {
-    fireFullyKioskCommand("loadUrl", { url: homeUrl });
-  }, 650);
+  }, 300);
 }
 
 function sendFullyFoxOne() {
