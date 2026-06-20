@@ -23,7 +23,7 @@ const config = {
   spotifySyncEnabled: true,
   spotifySyncIntervalSeconds: 25,
   youtubeApiKey: "",
-  foxOneWebUrl: "https://www.fox.com/live",
+  foxOneWebUrl: "https://www.fox.com/soccer/fifa-world-cup",
   liveTvChannels: {
     news: [
       { label: "ABC News Live", query: "ABC News Live" },
