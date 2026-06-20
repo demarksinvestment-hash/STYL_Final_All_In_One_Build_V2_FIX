@@ -68,26 +68,33 @@ function fireFullyKioskCommand(cmd, params = {}) {
     return;
   }
 
-  setStatus(`Opening Fully command: ${cmd}`);
+  setStatus(`Sending Fully command: ${cmd}`);
 
   ips.forEach((address, index) => {
-    const query = new URLSearchParams({ cmd, password: settings.password });
-    Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
+    const query = new URLSearchParams({
+      cmd,
+      password: settings.password
+    });
+
+    Object.entries(params || {}).forEach(([key, value]) => {
+      query.set(key, String(value ?? ""));
+    });
 
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
     setTimeout(() => {
-  const img = new Image();
-  img.style.display = "none";
-  img.referrerPolicy = "no-referrer";
-  img.src = url;
-  document.body.appendChild(img);
+      const img = new Image();
+      img.style.display = "none";
+      img.referrerPolicy = "no-referrer";
+      img.src = url;
+      document.body.appendChild(img);
 
-  setTimeout(() => {
-    img.remove();
-  }, 8000);
-}, index * 700);
-
+      setTimeout(() => {
+        img.remove();
+      }, 8000);
+    }, index * 700);
+  });
+}
 function sendFullyHome() {
   fireFullyKioskCommand("loadStartURL");
 }
