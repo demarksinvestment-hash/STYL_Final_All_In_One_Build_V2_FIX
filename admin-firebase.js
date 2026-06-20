@@ -77,10 +77,15 @@ function fireFullyKioskCommand(cmd, params = {}) {
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
     setTimeout(() => {
-      window.open(url, "_blank");
-    }, index * 700);
-  });
-}
+  const frame = document.createElement("iframe");
+  frame.style.display = "none";
+  frame.src = url;
+  document.body.appendChild(frame);
+
+  setTimeout(() => {
+    frame.remove();
+  }, 8000);
+}, index * 700);
 
 function sendFullyHome() {
   fireFullyKioskCommand("loadStartURL");
