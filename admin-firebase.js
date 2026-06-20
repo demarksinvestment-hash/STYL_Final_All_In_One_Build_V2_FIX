@@ -22,7 +22,8 @@ function setStatus(text) {
 
 
 const STYL_START_URL = "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html";
-const DEFAULT_FOX_ONE_URL = "https://www.fox.com/soccer/fifa-world-cup";
+const DEFAULT_FOX_ONE_URL = "https://www.fox.com/live";
+
 function getFullyKioskSettings() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem("stylFullyKioskSettings") || "{}"); } catch (e) {}
@@ -70,34 +71,30 @@ function fireFullyKioskCommand(cmd, params = {}) {
 
   setStatus(`Sending Fully command: ${cmd}`);
 
-  ips.forEach((address, index) => {
-    const query = new URLSearchParams({
-      cmd,
-      password: settings.password
-    });
-
-    Object.entries(params || {}).forEach(([key, value]) => {
-      query.set(key, String(value ?? ""));
-    });
-
+  ips.forEach(address => {
+    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
+    Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
-    setTimeout(() => {
-      const img = new Image();
-      img.style.display = "none";
-      img.referrerPolicy = "no-referrer";
-      img.src = url;
-      document.body.appendChild(img);
-
-      setTimeout(() => {
-        img.remove();
-      }, 8000);
-    }, index * 700);
+    // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
+    // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
+    const img = new Image();
+    img.style.display = "none";
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+    document.body.appendChild(img);
+    setTimeout(() => img.remove(), 8000);
   });
 }
+
 function sendFullyHome() {
-  fireFullyKioskCommand("loadStartURL");
+  // Fully REST commands are case-sensitive: use loadStartURL, not loadStartUrl.
+  fireFullyKioskCommand("setOverlayMessage", { text: "" });
+  setTimeout(() => fireFullyKioskCommand("toForeground"), 150);
+  setTimeout(() => fireFullyKioskCommand("loadStartURL"), 350);
+  setTimeout(() => fireFullyKioskCommand("loadStartUrl"), 650); // compatibility fallback for older builds
 }
+
 function sendFullyFoxOne() {
   const url = getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL;
   fireFullyKioskCommand("setOverlayMessage", { text: "" });
@@ -597,14 +594,7 @@ window.addEventListener("load", async () => {
 });
   hydrateFullyKioskSettings();
   byId("saveFullyKioskBtn")?.addEventListener("click", saveFullyKioskSettings);
-  byId("fullyHomeBtn")?.addEventListener("click", () => {
-  sendRemote("home", {
-    newsLiveOverride: "",
-    sportsLiveOverride: "",
-    remoteNonce: Date.now()
-  }, "Fully Home");
-  sendFullyHome();
-});
+  byId("fullyHomeBtn")?.addEventListener("click", () => { sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Fully Home"); sendFullyHome(); });
   byId("fullyClearOverlayBtn")?.addEventListener("click", clearFullyOverlay);
   ["fullyTablet1Ip","fullyTablet2Ip","fullyRemotePassword","foxOneWebUrl"].forEach(id => byId(id)?.addEventListener("change", saveFullyKioskSettings));
   byId("clearBookingClicksBtn")?.addEventListener("click", clearBookingClicks);
