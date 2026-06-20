@@ -593,7 +593,14 @@ window.addEventListener("load", async () => {
 });
   hydrateFullyKioskSettings();
   byId("saveFullyKioskBtn")?.addEventListener("click", saveFullyKioskSettings);
-  byId("fullyHomeBtn")?.addEventListener("click", () => { sendRemote("home", { newsLiveOverride: "", sportsLiveOverride: "" }, "Fully Home"); sendFullyHome(); });
+  byId("fullyHomeBtn")?.addEventListener("click", () => {
+  sendRemote("home", {
+    newsLiveOverride: "",
+    sportsLiveOverride: "",
+    remoteNonce: Date.now()
+  }, "Fully Home");
+  sendFullyHome();
+});
   byId("fullyClearOverlayBtn")?.addEventListener("click", clearFullyOverlay);
   ["fullyTablet1Ip","fullyTablet2Ip","fullyRemotePassword","foxOneWebUrl"].forEach(id => byId(id)?.addEventListener("change", saveFullyKioskSettings));
   byId("clearBookingClicksBtn")?.addEventListener("click", clearBookingClicks);
