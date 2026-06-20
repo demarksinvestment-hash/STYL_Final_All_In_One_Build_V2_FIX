@@ -72,7 +72,7 @@ function fireFullyKioskCommand(cmd, params = {}) {
   setStatus(`Sending Fully command: ${cmd}`);
 
   ips.forEach(address => {
-    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
+    const query = new URLSearchParams({ cmd, password: settings.password });
     Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
