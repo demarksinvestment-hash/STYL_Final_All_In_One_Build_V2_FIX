@@ -68,21 +68,17 @@ function fireFullyKioskCommand(cmd, params = {}) {
     return;
   }
 
-  setStatus(`Sending Fully command: ${cmd}`);
+  setStatus(`Opening Fully command: ${cmd}`);
 
-  ips.forEach(address => {
-    const query = new URLSearchParams({ cmd, password: settings.password, type: "json" });
+  ips.forEach((address, index) => {
+    const query = new URLSearchParams({ cmd, password: settings.password });
     Object.entries(params || {}).forEach(([key, value]) => query.set(key, String(value ?? "")));
+
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
-    // Image GET avoids CORS/fetch restrictions; Fully receives the command even though the response is not read.
-    // This also prevents a public GitHub Pages admin page from being stopped by normal fetch CORS rules.
-    const img = new Image();
-    img.style.display = "none";
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
-    document.body.appendChild(img);
-    setTimeout(() => img.remove(), 8000);
+    setTimeout(() => {
+      window.open(url, "_blank");
+    }, index * 700);
   });
 }
 
