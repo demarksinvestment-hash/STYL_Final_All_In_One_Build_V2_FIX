@@ -77,13 +77,14 @@ function fireFullyKioskCommand(cmd, params = {}) {
     const url = `http://${address}/?${query.toString()}&_=${Date.now()}`;
 
     setTimeout(() => {
-  const frame = document.createElement("iframe");
-  frame.style.display = "none";
-  frame.src = url;
-  document.body.appendChild(frame);
+  const img = new Image();
+  img.style.display = "none";
+  img.referrerPolicy = "no-referrer";
+  img.src = url;
+  document.body.appendChild(img);
 
   setTimeout(() => {
-    frame.remove();
+    img.remove();
   }, 8000);
 }, index * 700);
 
