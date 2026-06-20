@@ -22,8 +22,7 @@ function setStatus(text) {
 
 
 const STYL_START_URL = "https://demarksinvestment-hash.github.io/STYL_Final_All_In_One_Build_V2_FIX/live.html";
-const DEFAULT_FOX_ONE_URL = "https://www.fox.com/live";
-
+const DEFAULT_FOX_ONE_URL = "https://www.fox.com/soccer/fifa-world-cup";
 function getFullyKioskSettings() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem("stylFullyKioskSettings") || "{}"); } catch (e) {}
