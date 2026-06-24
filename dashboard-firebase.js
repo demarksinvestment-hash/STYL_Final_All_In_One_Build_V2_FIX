@@ -1745,6 +1745,12 @@ function applyProfile(data = {}) {
       else if (cmd === "news") showView("news", "Live News", "newsBtn");
       else if (cmd === "sports") showView("sports", "Live Sports", "sportsBtn");
       else if (cmd === "worldcup") showView("worldcup", "FIFA 2026", "worldcupBtn", "Scores, schedules, highlights, and FOX One full-match access.");
+        else if (cmd === "fullscreenmedia") {
+  document.body.classList.add("styl-media-fullscreen");
+}
+else if (cmd === "returnstyl") {
+  document.body.classList.remove("styl-media-fullscreen");
+}
       else if (cmd === "foxone") {
         const foxNonce = String(data.remoteNonce || data.updatedAt || "foxone");
         if (sessionStorage.getItem("stylFoxOneDone") !== foxNonce) {
