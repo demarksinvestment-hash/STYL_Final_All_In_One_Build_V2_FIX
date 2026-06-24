@@ -2410,3 +2410,32 @@ linear-gradient(180deg,#121212 0%,#030303 100%)}
 .content{grid-template-columns:220px 1fr !important;}
 /* Hide retired Spotify admin button if an older admin HTML is loaded */
 #musicSpotifyBtn{display:none !important;}
+body.styl-media-fullscreen .shell,
+body.styl-media-fullscreen .topbar,
+body.styl-media-fullscreen .tabs,
+body.styl-media-fullscreen .left-rail,
+body.styl-media-fullscreen .panel-header {
+  display: none !important;
+}
+
+body.styl-media-fullscreen .frame,
+body.styl-media-fullscreen .panel-body,
+body.styl-media-fullscreen .view.active {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  z-index: 9999 !important;
+  background: #000 !important;
+}
+
+body.styl-media-fullscreen iframe {
+  width: 100vw !important;
+  height: 100vh !important;
+  border: 0 !important;
+}
