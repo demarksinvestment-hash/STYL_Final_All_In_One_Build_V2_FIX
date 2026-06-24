@@ -552,6 +552,12 @@ window.addEventListener("load", async () => {
   byId("remoteSportsBtn")?.addEventListener("click", () => sendRemote("sports", {}, "Sports"));
   byId("remoteWorldCupBtn")?.addEventListener("click", () => sendRemote("worldcup", {}, "FIFA 2026"));
   byId("remoteFoxOneBtn")?.addEventListener("click", () => { sendRemote("foxone", { remoteNonce: Date.now(), foxOneWebUrl: getFullyKioskSettings().foxOneWebUrl || DEFAULT_FOX_ONE_URL }, "FOX One Live"); sendFullyFoxOne(); });
+  byId("remoteFullScreenBtn")?.addEventListener("click", () =>
+  sendRemote("fullscreenmedia", { remoteNonce: Date.now() }, "Full Screen Media")
+);
+byId("remoteReturnStylBtn")?.addEventListener("click", () =>
+  sendRemote("returnstyl", { remoteNonce: Date.now() }, "Return to STYL")
+);
   byId("remoteMusicBtn")?.addEventListener("click", () => sendRemote("music", { mode: byId("mode")?.value || "executive" }, "Music"));
   byId("remoteBookBtn")?.addEventListener("click", () => sendRemote("book", {}, "Book"));
   byId("remoteVipBtn")?.addEventListener("click", () => sendRemote("vip", {}, "VIP"));
